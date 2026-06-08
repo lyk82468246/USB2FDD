@@ -268,7 +268,7 @@ static void FDD_USB_ReadyDrive(void)
 
 static void FDD_USB_SendHelp(void)
 {
-    FDD_USB_SendText("CMDS PING HELP SAFE STATUS READY MOTOR SELECT DIR STEP HOME SEEK SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_TRACK CAPTURE_TS FLUX_READ\r\n");
+    FDD_USB_SendText("CMDS PING HELP SAFE STATUS READY MOTOR SELECT DIR STEP HOME SEEK SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ\r\n");
 }
 
 static void FDD_USB_SendFlux(void)
@@ -422,6 +422,11 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
         FDD_Flux_Reset();
         FDD_USB_SendText("OK FLUX_RESET\r\n");
     }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_CLEAR"))
+    {
+        FDD_Flux_Reset();
+        FDD_USB_SendText("OK FLUX_CLEAR\r\n");
+    }
     else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_INFO"))
     {
         FDD_USB_SendFluxInfo();
@@ -442,6 +447,10 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
         FDD_USB_SendText("OK FLUX_STOP\r\n");
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "CAPTURE_REV"))
+    {
+        FDD_USB_CaptureRev();
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "CAPTURE_NEXT"))
     {
         FDD_USB_CaptureRev();
     }

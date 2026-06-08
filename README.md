@@ -102,11 +102,13 @@ INDEX_RESET
 INDEX_WAIT
 RPM
 FLUX_RESET
+FLUX_CLEAR
 FLUX_INFO
 FLUX_STATS
 FLUX_START
 FLUX_STOP
 CAPTURE_REV
+CAPTURE_NEXT
 CAPTURE_TRACK n
 CAPTURE_TS track side
 FLUX_READ
@@ -125,6 +127,10 @@ FLUX_READ
 `READY` selects the drive, starts the motor, waits for `INDEX#`, then returns the estimated RPM and index period.
 
 `CAPTURE_TS track side` seeks to a track, selects side 0 or 1, and captures one revolution.
+
+`CAPTURE_NEXT` captures another revolution on the current track and side.
+
+`FLUX_CLEAR` clears the current flux buffer, equivalent to `FLUX_RESET` with a name that is friendlier for host-side scripts.
 
 ## USB CDC 命令
 
@@ -148,11 +154,13 @@ INDEX_RESET
 INDEX_WAIT
 RPM
 FLUX_RESET
+FLUX_CLEAR
 FLUX_INFO
 FLUX_STATS
 FLUX_START
 FLUX_STOP
 CAPTURE_REV
+CAPTURE_NEXT
 CAPTURE_TRACK n
 CAPTURE_TS track side
 FLUX_READ
@@ -171,6 +179,10 @@ FLUX_READ
 `READY` 会选中软驱、启动马达、等待 `INDEX#`，然后返回估算 RPM 和 index 周期。
 
 `CAPTURE_TS track side` 会寻道到指定磁道、选择 0/1 磁头面，并采集一圈。
+
+`CAPTURE_NEXT` 会在当前磁道和当前磁头面上重新采集一圈。
+
+`FLUX_CLEAR` 用于清空当前磁通缓冲，功能等价于 `FLUX_RESET`，但更适合上位机脚本表达语义。
 
 ## Suggested Bring-Up Flow
 
