@@ -13,7 +13,7 @@
 //<<AICUBE_USER_DEFINE_BEGIN>>
 // 在此添加用户宏定义
 #define FDD_FW_VERSION          "FDD-0.1"
-#define FDD_FLUX_BUFFER_SIZE    4096
+#define FDD_FLUX_BUFFER_SIZE    12000
 #define FDD_STEP_PULSE_US       6
 #define FDD_STEP_SETTLE_MS      4
 #define FDD_HOME_MAX_STEPS      90

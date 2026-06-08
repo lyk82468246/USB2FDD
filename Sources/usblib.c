@@ -28,6 +28,7 @@ static void FDD_USB_SendStatus(void);
 static void FDD_USB_SendFlux(void);
 static void FDD_USB_SendRpm(void);
 static void FDD_USB_CaptureRev(void);
+static void FDD_USB_SendHelp(void);
 static char g_usb_cmd[32];
 static char g_usb_text_resp[160];
 static uint16_t g_usb_flux_samples[31];
@@ -188,6 +189,11 @@ static void FDD_USB_SendRpm(void)
     FDD_USB_SendText(g_usb_text_resp);
 }
 
+static void FDD_USB_SendHelp(void)
+{
+    FDD_USB_SendText("CMDS PING SAFE STATUS MOTOR SELECT DIR STEP HOME SEEK SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_START FLUX_STOP CAPTURE_REV CAPTURE_TRACK FLUX_READ\r\n");
+}
+
 static void FDD_USB_SendFlux(void)
 {
     uint8_t i;
@@ -255,6 +261,10 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     if (FDD_USB_CmdEq(g_usb_cmd, "PING"))
     {
         FDD_USB_SendText("PONG " FDD_FW_VERSION "\r\n");
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "HELP"))
+    {
+        FDD_USB_SendHelp();
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "SAFE"))
     {
@@ -344,6 +354,13 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     else if (FDD_USB_CmdEq(g_usb_cmd, "CAPTURE_REV"))
     {
         FDD_USB_CaptureRev();
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "CAPTURE_TRACK "))
+    {
+        if (FDD_USB_ParseU8(&g_usb_cmd[14], &value) && FDD_IO_Seek(value))
+            FDD_USB_CaptureRev();
+        else
+            FDD_USB_SendText("ERR CAPTURE_TRACK\r\n");
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_READ"))
     {
