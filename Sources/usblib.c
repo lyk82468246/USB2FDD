@@ -29,6 +29,7 @@ static void FDD_USB_SendFluxInfo(void);
 static void FDD_USB_SendFluxStats(void);
 static void FDD_USB_SendFlux(void);
 static void FDD_USB_SendRpm(void);
+static void FDD_USB_ReadyDrive(void);
 static void FDD_USB_CaptureRev(void);
 static void FDD_USB_SendHelp(void);
 static char g_usb_cmd[32];
@@ -225,9 +226,32 @@ static void FDD_USB_SendRpm(void)
     FDD_USB_SendText(g_usb_text_resp);
 }
 
+static void FDD_USB_ReadyDrive(void)
+{
+    uint32_t period_ms;
+    uint16_t rpm;
+
+    FDD_IO_Select(1);
+    FDD_IO_Motor(1);
+    FDD_Index_Reset();
+
+    if (!FDD_Index_Wait(FDD_READY_TIMEOUT_MS))
+    {
+        FDD_USB_SendText("ERR READY NO_INDEX\r\n");
+        return;
+    }
+
+    FDD_Index_Wait(FDD_READY_TIMEOUT_MS);
+    period_ms = FDD_Index_GetPeriodMs();
+    rpm = period_ms ? (uint16_t)(60000UL / period_ms) : 0;
+
+    sprintf(g_usb_text_resp, "OK READY RPM=%u IP=%lu\r\n", rpm, period_ms);
+    FDD_USB_SendText(g_usb_text_resp);
+}
+
 static void FDD_USB_SendHelp(void)
 {
-    FDD_USB_SendText("CMDS PING SAFE STATUS MOTOR SELECT DIR STEP HOME SEEK SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_TRACK FLUX_READ\r\n");
+    FDD_USB_SendText("CMDS PING HELP SAFE STATUS READY MOTOR SELECT DIR STEP HOME SEEK SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_TRACK FLUX_READ\r\n");
 }
 
 static void FDD_USB_SendFlux(void)
@@ -306,6 +330,10 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     {
         FDD_IO_InitSafe();
         FDD_USB_SendText("OK SAFE\r\n");
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "READY"))
+    {
+        FDD_USB_ReadyDrive();
     }
     else if (FDD_USB_CmdStarts(g_usb_cmd, "MOTOR "))
     {

@@ -88,6 +88,7 @@ Text commands are case-insensitive.
 PING
 HELP
 SAFE
+READY
 STATUS
 MOTOR 0|1
 SELECT 0|1
@@ -120,6 +121,8 @@ FLUX_READ
 
 `FLUX_STATS` returns sample count, minimum interval, maximum interval, average interval, and overflow count for the current stopped capture buffer. It does not consume samples.
 
+`READY` selects the drive, starts the motor, waits for `INDEX#`, then returns the estimated RPM and index period.
+
 ## USB CDC 命令
 
 文本命令不区分大小写。
@@ -128,6 +131,7 @@ FLUX_READ
 PING
 HELP
 SAFE
+READY
 STATUS
 MOTOR 0|1
 SELECT 0|1
@@ -160,14 +164,13 @@ FLUX_READ
 
 `FLUX_STATS` 返回当前已停止采集缓冲区的样本数、最小间隔、最大间隔、平均间隔和溢出次数，不会消耗 `FLUX_READ` 数据。
 
+`READY` 会选中软驱、启动马达、等待 `INDEX#`，然后返回估算 RPM 和 index 周期。
+
 ## Suggested Bring-Up Flow
 
 ```text
 SAFE
-MOTOR 1
-SELECT 1
-INDEX_WAIT
-RPM
+READY
 HOME
 SEEK 10
 CAPTURE_REV
@@ -181,10 +184,7 @@ For a 300 RPM drive, `RPM` should be close to `300`, and the index period should
 
 ```text
 SAFE
-MOTOR 1
-SELECT 1
-INDEX_WAIT
-RPM
+READY
 HOME
 CAPTURE_TRACK 0
 STATUS
