@@ -112,6 +112,7 @@ CAPTURE_NEXT
 CAPTURE_TRACK n
 CAPTURE_TS track side
 FLUX_READ
+FLUX_READ_ASCII
 ```
 
 `FLUX_READ` returns a binary packet:
@@ -131,6 +132,8 @@ FLUX_READ
 `CAPTURE_NEXT` captures another revolution on the current track and side.
 
 `FLUX_CLEAR` clears the current flux buffer, equivalent to `FLUX_RESET` with a name that is friendlier for host-side scripts.
+
+`FLUX_READ_ASCII` consumes up to 8 flux samples and returns them as text for quick manual inspection.
 
 ## USB CDC 命令
 
@@ -164,6 +167,7 @@ CAPTURE_NEXT
 CAPTURE_TRACK n
 CAPTURE_TS track side
 FLUX_READ
+FLUX_READ_ASCII
 ```
 
 `FLUX_READ` 返回二进制包：
@@ -183,6 +187,8 @@ FLUX_READ
 `CAPTURE_NEXT` 会在当前磁道和当前磁头面上重新采集一圈。
 
 `FLUX_CLEAR` 用于清空当前磁通缓冲，功能等价于 `FLUX_RESET`，但更适合上位机脚本表达语义。
+
+`FLUX_READ_ASCII` 会消耗最多 8 个磁通样本，并以文本形式返回，方便手工快速查看。
 
 ## Suggested Bring-Up Flow
 
