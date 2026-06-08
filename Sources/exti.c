@@ -217,6 +217,60 @@ uint16_t FDD_Flux_GetOverflowCount(void)
     return overflow;
 }
 
+uint8_t FDD_Flux_GetStats(uint16_t *count, uint16_t *min_value, uint16_t *max_value, uint16_t *avg_value)
+{
+    uint8_t ea_save;
+    uint16_t read;
+    uint16_t write;
+    uint16_t n;
+    uint16_t value;
+    uint16_t min_v;
+    uint16_t max_v;
+    uint32_t sum;
+
+    ea_save = EA;
+    DisableGlobalInt();
+    if (g_flux_capture_enable)
+    {
+        if (ea_save)
+            EnableGlobalInt();
+        return 0;
+    }
+    read = g_flux_read;
+    write = g_flux_write;
+    if (ea_save)
+        EnableGlobalInt();
+
+    if (read == write)
+        return 0;
+
+    n = 0;
+    sum = 0;
+    min_v = 0xffff;
+    max_v = 0;
+
+    while (read != write)
+    {
+        value = g_flux_buffer[read];
+        if (value < min_v)
+            min_v = value;
+        if (value > max_v)
+            max_v = value;
+        sum += value;
+        n++;
+
+        read++;
+        if (read >= FDD_FLUX_BUFFER_SIZE)
+            read = 0;
+    }
+
+    *count = n;
+    *min_value = min_v;
+    *max_value = max_v;
+    *avg_value = (uint16_t)(sum / n);
+    return 1;
+}
+
 uint16_t FDD_Flux_Read(uint16_t *dst, uint16_t max_count)
 {
     uint8_t ea_save;

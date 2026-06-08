@@ -102,6 +102,7 @@ INDEX_WAIT
 RPM
 FLUX_RESET
 FLUX_INFO
+FLUX_STATS
 FLUX_START
 FLUX_STOP
 CAPTURE_REV
@@ -116,6 +117,8 @@ FLUX_READ
 - Remaining bytes: little-endian `uint16_t` timer intervals
 
 `FLUX_INFO` returns capture state, remaining sample count, overflow count, and the last measured index period.
+
+`FLUX_STATS` returns sample count, minimum interval, maximum interval, average interval, and overflow count for the current stopped capture buffer. It does not consume samples.
 
 ## USB CDC 命令
 
@@ -139,6 +142,7 @@ INDEX_WAIT
 RPM
 FLUX_RESET
 FLUX_INFO
+FLUX_STATS
 FLUX_START
 FLUX_STOP
 CAPTURE_REV
@@ -153,6 +157,8 @@ FLUX_READ
 - 后续数据：little-endian `uint16_t` 定时器间隔样本
 
 `FLUX_INFO` 返回磁通采集状态、剩余样本数、溢出次数和最近一次 `INDEX#` 周期。
+
+`FLUX_STATS` 返回当前已停止采集缓冲区的样本数、最小间隔、最大间隔、平均间隔和溢出次数，不会消耗 `FLUX_READ` 数据。
 
 ## Suggested Bring-Up Flow
 
