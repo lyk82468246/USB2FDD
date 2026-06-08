@@ -1,0 +1,359 @@
+//<<AICUBE_USER_HEADER_REMARK_BEGIN>>
+////////////////////////////////////////
+// 在此添加用户文件头说明信息  
+// 文件名称: usblib.c
+// 文件描述: 
+// 文件版本: V1.0
+// 修改记录:
+//   1. (2026-06-08) 创建文件
+////////////////////////////////////////
+//<<AICUBE_USER_HEADER_REMARK_END>>
+
+
+#include "config.h"
+
+
+//<<AICUBE_USER_INCLUDE_BEGIN>>
+// 在此添加用户头文件包含  
+//<<AICUBE_USER_INCLUDE_END>>
+
+
+//<<AICUBE_USER_GLOBAL_DEFINE_BEGIN>>
+// 在此添加用户全局变量定义、用户宏定义以及函数声明  
+static void FDD_USB_SendText(const char *text);
+static uint8_t FDD_USB_CmdEq(const char *cmd, const char *word);
+static uint8_t FDD_USB_CmdStarts(const char *cmd, const char *word);
+static uint8_t FDD_USB_ParseU8(const char *text, uint8_t *value);
+static void FDD_USB_SendStatus(void);
+static void FDD_USB_SendFlux(void);
+static void FDD_USB_SendRpm(void);
+static void FDD_USB_CaptureRev(void);
+static char g_usb_cmd[32];
+static char g_usb_text_resp[160];
+static uint16_t g_usb_flux_samples[31];
+static uint8_t g_usb_flux_resp[2 + 31 * 2];
+//<<AICUBE_USER_GLOBAL_DEFINE_END>>
+
+
+
+////////////////////////////////////////
+// USB库初始化函数
+// 入口参数: 无
+// 函数返回: 无
+////////////////////////////////////////
+void USBLIB_Init(void)
+{
+    usb_init();                         //初始化USB模块
+    USB_SetIntPriority(0);              //设置中断为最低优先级
+    set_usb_ispcmd("@STCISP#");         //设置USB不停电下载命令
+
+    //<<AICUBE_USER_USBLIB_INITIAL_BEGIN>>
+    // 在此添加用户初始化代码  
+    //<<AICUBE_USER_USBLIB_INITIAL_END>>
+}
+
+////////////////////////////////////////
+// 等待USB配置完成函数
+// 入口参数: 无
+// 函数返回: 无
+////////////////////////////////////////
+void USBLIB_WaitConfiged(void)
+{
+    while (DeviceState != DEVSTATE_CONFIGURED) //等待USB完成配置
+        WDT_Clear();                    //清看门狗定时器 (防止硬件自动使能看门狗)
+}
+
+////////////////////////////////////////
+// USB设备接收数据处理程序
+// 入口参数: 无
+// 函数返回: 无
+// bUsbOutReady：USB设备接收数据标志位
+// OutNumber：USB设备接收到的数据长度
+// UsbOutBuffer：保存USB设备接收到的数据
+////////////////////////////////////////
+void USBLIB_OUT_Done(void)
+{
+    if (bUsbOutReady)                   //查询是否有接收到USB主机发送数据
+    {
+        //<<AICUBE_USER_USBLIB_ISR_CODE1_BEGIN>>
+        // 在此添加中断函数用户代码  
+        FDD_USB_ProcessPacket(UsbOutBuffer, OutNumber);
+        //<<AICUBE_USER_USBLIB_ISR_CODE1_END>>
+        usb_OUT_done();                 //当前包的数据处理完成,通知USB主机可以发送下一包数据
+    }
+}
+
+
+
+//<<AICUBE_USER_FUNCTION_IMPLEMENT_BEGIN>>
+// 在此添加用户函数实现代码  
+static void FDD_USB_SendText(const char *text)
+{
+    USB_SendData((uint8_t *)text, strlen(text));
+}
+
+static uint8_t FDD_USB_CmdEq(const char *cmd, const char *word)
+{
+    while ((*cmd == ' ') || (*cmd == '\t'))
+        cmd++;
+
+    while (*word)
+    {
+        if (*cmd != *word)
+            return 0;
+        cmd++;
+        word++;
+    }
+
+    return ((*cmd == 0) || (*cmd == '\r') || (*cmd == '\n') || (*cmd == ' ') || (*cmd == '\t'));
+}
+
+static uint8_t FDD_USB_CmdStarts(const char *cmd, const char *word)
+{
+    while ((*cmd == ' ') || (*cmd == '\t'))
+        cmd++;
+
+    while (*word)
+    {
+        if (*cmd != *word)
+            return 0;
+        cmd++;
+        word++;
+    }
+
+    return 1;
+}
+
+static uint8_t FDD_USB_ParseU8(const char *text, uint8_t *value)
+{
+    uint16_t v;
+    uint8_t found;
+
+    v = 0;
+    found = 0;
+    while ((*text == ' ') || (*text == '\t'))
+        text++;
+
+    while ((*text >= '0') && (*text <= '9'))
+    {
+        found = 1;
+        v = (uint16_t)(v * 10 + (*text - '0'));
+        if (v > 255)
+            return 0;
+        text++;
+    }
+
+    if (!found)
+        return 0;
+
+    *value = (uint8_t)v;
+    return 1;
+}
+
+static void FDD_USB_SendStatus(void)
+{
+    uint8_t track;
+    uint32_t period_ms;
+    uint16_t rpm;
+
+    if (!FDD_IO_GetTrack(&track))
+        track = 255;
+    period_ms = FDD_Index_GetPeriodMs();
+    rpm = period_ms ? (uint16_t)(60000UL / period_ms) : 0;
+
+    sprintf(g_usb_text_resp,
+            "STAT T=%u T0=%u WP=%u DC=%u IDX=%u IP=%lu RPM=%u CAP=%u FLUX=%u OVF=%u MS=%lu\r\n",
+            track,
+            FDD_IO_IsTrack0(),
+            FDD_IO_IsWriteProtected(),
+            FDD_IO_IsDiskChanged(),
+            g_index_count,
+            period_ms,
+            rpm,
+            FDD_Flux_IsCapturing(),
+            FDD_Flux_Available(),
+            FDD_Flux_GetOverflowCount(),
+            FDD_GetMillis());
+    FDD_USB_SendText(g_usb_text_resp);
+}
+
+static void FDD_USB_SendRpm(void)
+{
+    uint32_t period_ms;
+    uint16_t rpm;
+
+    period_ms = FDD_Index_GetPeriodMs();
+    rpm = period_ms ? (uint16_t)(60000UL / period_ms) : 0;
+    sprintf(g_usb_text_resp, "RPM %u PERIOD %lu\r\n", rpm, period_ms);
+    FDD_USB_SendText(g_usb_text_resp);
+}
+
+static void FDD_USB_SendFlux(void)
+{
+    uint8_t i;
+    uint8_t count;
+
+    count = (uint8_t)FDD_Flux_Read(g_usb_flux_samples, 31);
+    g_usb_flux_resp[0] = 'F';
+    g_usb_flux_resp[1] = count;
+
+    for (i = 0; i < count; i++)
+    {
+        g_usb_flux_resp[2 + i * 2] = (uint8_t)(g_usb_flux_samples[i] & 0xff);
+        g_usb_flux_resp[3 + i * 2] = (uint8_t)(g_usb_flux_samples[i] >> 8);
+    }
+
+    USB_SendData(g_usb_flux_resp, 2 + count * 2);
+}
+
+static void FDD_USB_CaptureRev(void)
+{
+    FDD_Flux_Stop();
+    FDD_Flux_Reset();
+    FDD_Index_Reset();
+
+    if (!FDD_Index_Wait(FDD_INDEX_TIMEOUT_MS))
+    {
+        FDD_USB_SendText("ERR CAPTURE NO_INDEX\r\n");
+        return;
+    }
+
+    FDD_Flux_Start();
+    if (!FDD_Index_Wait(FDD_CAPTURE_TIMEOUT_MS))
+    {
+        FDD_Flux_Stop();
+        FDD_USB_SendText("ERR CAPTURE TIMEOUT\r\n");
+        return;
+    }
+    FDD_Flux_Stop();
+
+    sprintf(g_usb_text_resp,
+            "OK CAPTURE FLUX=%u OVF=%u IP=%lu\r\n",
+            FDD_Flux_Available(),
+            FDD_Flux_GetOverflowCount(),
+            FDD_Index_GetPeriodMs());
+    FDD_USB_SendText(g_usb_text_resp);
+}
+
+void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
+{
+    uint8_t i;
+    uint8_t value;
+
+    if (len >= sizeof(g_usb_cmd))
+        len = sizeof(g_usb_cmd) - 1;
+
+    for (i = 0; i < len; i++)
+    {
+        if ((buf[i] >= 'a') && (buf[i] <= 'z'))
+            g_usb_cmd[i] = buf[i] - 32;
+        else
+            g_usb_cmd[i] = buf[i];
+    }
+    g_usb_cmd[len] = 0;
+
+    if (FDD_USB_CmdEq(g_usb_cmd, "PING"))
+    {
+        FDD_USB_SendText("PONG " FDD_FW_VERSION "\r\n");
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "SAFE"))
+    {
+        FDD_IO_InitSafe();
+        FDD_USB_SendText("OK SAFE\r\n");
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "MOTOR "))
+    {
+        FDD_IO_Motor(g_usb_cmd[6] == '1');
+        FDD_USB_SendText("OK MOTOR\r\n");
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "SELECT "))
+    {
+        FDD_IO_Select(g_usb_cmd[7] == '1');
+        FDD_USB_SendText("OK SELECT\r\n");
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "DIR "))
+    {
+        FDD_IO_SetDirection(g_usb_cmd[4] == '1');
+        FDD_USB_SendText("OK DIR\r\n");
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "STEP"))
+    {
+        FDD_IO_StepPulse();
+        FDD_USB_SendText("OK STEP\r\n");
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "HOME"))
+    {
+        if (FDD_IO_Home())
+            FDD_USB_SendText("OK HOME\r\n");
+        else
+            FDD_USB_SendText("ERR HOME\r\n");
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "SEEK "))
+    {
+        if (FDD_USB_ParseU8(&g_usb_cmd[5], &value) && FDD_IO_Seek(value))
+            FDD_USB_SendText("OK SEEK\r\n");
+        else
+            FDD_USB_SendText("ERR SEEK\r\n");
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "SIDE "))
+    {
+        FDD_IO_SetSide(g_usb_cmd[5] == '1');
+        FDD_USB_SendText("OK SIDE\r\n");
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "DENSEL "))
+    {
+        FDD_IO_SetDensity(g_usb_cmd[7] == '1');
+        FDD_USB_SendText("OK DENSEL\r\n");
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "STATUS"))
+    {
+        FDD_USB_SendStatus();
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "INDEX_RESET"))
+    {
+        FDD_Index_Reset();
+        FDD_USB_SendText("OK INDEX_RESET\r\n");
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "INDEX_WAIT"))
+    {
+        if (FDD_Index_Wait(FDD_INDEX_TIMEOUT_MS))
+            FDD_USB_SendText("OK INDEX_WAIT\r\n");
+        else
+            FDD_USB_SendText("ERR INDEX_WAIT\r\n");
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "RPM"))
+    {
+        FDD_USB_SendRpm();
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_RESET"))
+    {
+        FDD_Flux_Reset();
+        FDD_USB_SendText("OK FLUX_RESET\r\n");
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_START"))
+    {
+        FDD_Flux_Reset();
+        FDD_Flux_Start();
+        FDD_USB_SendText("OK FLUX_START\r\n");
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_STOP"))
+    {
+        FDD_Flux_Stop();
+        FDD_USB_SendText("OK FLUX_STOP\r\n");
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "CAPTURE_REV"))
+    {
+        FDD_USB_CaptureRev();
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_READ"))
+    {
+        FDD_USB_SendFlux();
+    }
+    else
+    {
+        FDD_USB_SendText("ERR CMD\r\n");
+    }
+}
+//<<AICUBE_USER_FUNCTION_IMPLEMENT_END>>
+
+
