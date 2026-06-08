@@ -25,6 +25,7 @@ static uint8_t FDD_USB_CmdEq(const char *cmd, const char *word);
 static uint8_t FDD_USB_CmdStarts(const char *cmd, const char *word);
 static uint8_t FDD_USB_ParseU8(const char *text, uint8_t *value);
 static void FDD_USB_SendStatus(void);
+static void FDD_USB_SendFluxInfo(void);
 static void FDD_USB_SendFlux(void);
 static void FDD_USB_SendRpm(void);
 static void FDD_USB_CaptureRev(void);
@@ -178,6 +179,17 @@ static void FDD_USB_SendStatus(void)
     FDD_USB_SendText(g_usb_text_resp);
 }
 
+static void FDD_USB_SendFluxInfo(void)
+{
+    sprintf(g_usb_text_resp,
+            "FLUX_INFO CAP=%u AVAIL=%u OVF=%u IP=%lu\r\n",
+            FDD_Flux_IsCapturing(),
+            FDD_Flux_Available(),
+            FDD_Flux_GetOverflowCount(),
+            FDD_Index_GetPeriodMs());
+    FDD_USB_SendText(g_usb_text_resp);
+}
+
 static void FDD_USB_SendRpm(void)
 {
     uint32_t period_ms;
@@ -191,7 +203,7 @@ static void FDD_USB_SendRpm(void)
 
 static void FDD_USB_SendHelp(void)
 {
-    FDD_USB_SendText("CMDS PING SAFE STATUS MOTOR SELECT DIR STEP HOME SEEK SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_START FLUX_STOP CAPTURE_REV CAPTURE_TRACK FLUX_READ\r\n");
+    FDD_USB_SendText("CMDS PING SAFE STATUS MOTOR SELECT DIR STEP HOME SEEK SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_START FLUX_STOP FLUX_INFO CAPTURE_REV CAPTURE_TRACK FLUX_READ\r\n");
 }
 
 static void FDD_USB_SendFlux(void)
@@ -339,6 +351,10 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     {
         FDD_Flux_Reset();
         FDD_USB_SendText("OK FLUX_RESET\r\n");
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_INFO"))
+    {
+        FDD_USB_SendFluxInfo();
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_START"))
     {
