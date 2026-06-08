@@ -108,6 +108,7 @@ FLUX_START
 FLUX_STOP
 CAPTURE_REV
 CAPTURE_TRACK n
+CAPTURE_TS track side
 FLUX_READ
 ```
 
@@ -122,6 +123,8 @@ FLUX_READ
 `FLUX_STATS` returns sample count, minimum interval, maximum interval, average interval, and overflow count for the current stopped capture buffer. It does not consume samples.
 
 `READY` selects the drive, starts the motor, waits for `INDEX#`, then returns the estimated RPM and index period.
+
+`CAPTURE_TS track side` seeks to a track, selects side 0 or 1, and captures one revolution.
 
 ## USB CDC 命令
 
@@ -151,6 +154,7 @@ FLUX_START
 FLUX_STOP
 CAPTURE_REV
 CAPTURE_TRACK n
+CAPTURE_TS track side
 FLUX_READ
 ```
 
@@ -165,6 +169,8 @@ FLUX_READ
 `FLUX_STATS` 返回当前已停止采集缓冲区的样本数、最小间隔、最大间隔、平均间隔和溢出次数，不会消耗 `FLUX_READ` 数据。
 
 `READY` 会选中软驱、启动马达、等待 `INDEX#`，然后返回估算 RPM 和 index 周期。
+
+`CAPTURE_TS track side` 会寻道到指定磁道、选择 0/1 磁头面，并采集一圈。
 
 ## Suggested Bring-Up Flow
 

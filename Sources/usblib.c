@@ -24,6 +24,7 @@ static void FDD_USB_SendText(const char *text);
 static uint8_t FDD_USB_CmdEq(const char *cmd, const char *word);
 static uint8_t FDD_USB_CmdStarts(const char *cmd, const char *word);
 static uint8_t FDD_USB_ParseU8(const char *text, uint8_t *value);
+static uint8_t FDD_USB_ParseTwoU8(const char *text, uint8_t *first, uint8_t *second);
 static void FDD_USB_SendStatus(void);
 static void FDD_USB_SendFluxInfo(void);
 static void FDD_USB_SendFluxStats(void);
@@ -154,6 +155,22 @@ static uint8_t FDD_USB_ParseU8(const char *text, uint8_t *value)
     return 1;
 }
 
+static uint8_t FDD_USB_ParseTwoU8(const char *text, uint8_t *first, uint8_t *second)
+{
+    while ((*text == ' ') || (*text == '\t'))
+        text++;
+
+    if (!FDD_USB_ParseU8(text, first))
+        return 0;
+
+    while ((*text >= '0') && (*text <= '9'))
+        text++;
+    while ((*text == ' ') || (*text == '\t') || (*text == ','))
+        text++;
+
+    return FDD_USB_ParseU8(text, second);
+}
+
 static void FDD_USB_SendStatus(void)
 {
     uint8_t track;
@@ -251,7 +268,7 @@ static void FDD_USB_ReadyDrive(void)
 
 static void FDD_USB_SendHelp(void)
 {
-    FDD_USB_SendText("CMDS PING HELP SAFE STATUS READY MOTOR SELECT DIR STEP HOME SEEK SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_TRACK FLUX_READ\r\n");
+    FDD_USB_SendText("CMDS PING HELP SAFE STATUS READY MOTOR SELECT DIR STEP HOME SEEK SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_TRACK CAPTURE_TS FLUX_READ\r\n");
 }
 
 static void FDD_USB_SendFlux(void)
@@ -305,6 +322,7 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
 {
     uint8_t i;
     uint8_t value;
+    uint8_t value2;
 
     if (len >= sizeof(g_usb_cmd))
         len = sizeof(g_usb_cmd) - 1;
@@ -433,6 +451,18 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
             FDD_USB_CaptureRev();
         else
             FDD_USB_SendText("ERR CAPTURE_TRACK\r\n");
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "CAPTURE_TS "))
+    {
+        if (FDD_USB_ParseTwoU8(&g_usb_cmd[11], &value, &value2) && (value2 <= 1) && FDD_IO_Seek(value))
+        {
+            FDD_IO_SetSide(value2);
+            FDD_USB_CaptureRev();
+        }
+        else
+        {
+            FDD_USB_SendText("ERR CAPTURE_TS\r\n");
+        }
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_READ"))
     {
