@@ -30,6 +30,8 @@ static void FDD_USB_SendFluxInfo(void);
 static void FDD_USB_SendFluxStats(void);
 static void FDD_USB_SendFlux(void);
 static void FDD_USB_SendFluxAscii(void);
+static void FDD_USB_SendFluxPeekAscii(void);
+static void FDD_USB_SendFluxAsciiSamples(const char *tag, uint16_t count);
 static void FDD_USB_SendRpm(void);
 static void FDD_USB_ReadyDrive(void);
 static void FDD_USB_CaptureRev(void);
@@ -269,7 +271,7 @@ static void FDD_USB_ReadyDrive(void)
 
 static void FDD_USB_SendHelp(void)
 {
-    FDD_USB_SendText("CMDS PING HELP SAFE STATUS READY MOTOR SELECT DIR STEP HOME SEEK SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_READ_ASCII\r\n");
+    FDD_USB_SendText("CMDS PING HELP SAFE STATUS READY MOTOR SELECT DIR STEP HOME SEEK SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_READ_ASCII FLUX_PEEK_ASCII\r\n");
 }
 
 static void FDD_USB_SendFlux(void)
@@ -290,13 +292,11 @@ static void FDD_USB_SendFlux(void)
     USB_SendData(g_usb_flux_resp, 2 + count * 2);
 }
 
-static void FDD_USB_SendFluxAscii(void)
+static void FDD_USB_SendFluxAsciiSamples(const char *tag, uint16_t count)
 {
     uint8_t i;
-    uint8_t count;
 
-    count = (uint8_t)FDD_Flux_Read(g_usb_flux_samples, 8);
-    sprintf(g_usb_text_resp, "FLUX_ASCII N=%u", count);
+    sprintf(g_usb_text_resp, "%s N=%u", tag, count);
     FDD_USB_SendText(g_usb_text_resp);
 
     for (i = 0; i < count; i++)
@@ -306,6 +306,22 @@ static void FDD_USB_SendFluxAscii(void)
     }
 
     FDD_USB_SendText("\r\n");
+}
+
+static void FDD_USB_SendFluxAscii(void)
+{
+    uint8_t count;
+
+    count = (uint8_t)FDD_Flux_Read(g_usb_flux_samples, 8);
+    FDD_USB_SendFluxAsciiSamples("FLUX_ASCII", count);
+}
+
+static void FDD_USB_SendFluxPeekAscii(void)
+{
+    uint8_t count;
+
+    count = (uint8_t)FDD_Flux_Peek(g_usb_flux_samples, 8);
+    FDD_USB_SendFluxAsciiSamples("FLUX_PEEK", count);
 }
 
 static void FDD_USB_CaptureRev(void)
@@ -499,6 +515,10 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_READ_ASCII"))
     {
         FDD_USB_SendFluxAscii();
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_PEEK_ASCII"))
+    {
+        FDD_USB_SendFluxPeekAscii();
     }
     else
     {

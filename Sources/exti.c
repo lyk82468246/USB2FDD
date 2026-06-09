@@ -271,6 +271,32 @@ uint8_t FDD_Flux_GetStats(uint16_t *count, uint16_t *min_value, uint16_t *max_va
     return 1;
 }
 
+uint16_t FDD_Flux_Peek(uint16_t *dst, uint16_t max_count)
+{
+    uint8_t ea_save;
+    uint16_t read;
+    uint16_t write;
+    uint16_t count;
+
+    ea_save = EA;
+    DisableGlobalInt();
+    read = g_flux_read;
+    write = g_flux_write;
+    if (ea_save)
+        EnableGlobalInt();
+
+    count = 0;
+    while ((count < max_count) && (read != write))
+    {
+        dst[count++] = g_flux_buffer[read];
+        read++;
+        if (read >= FDD_FLUX_BUFFER_SIZE)
+            read = 0;
+    }
+
+    return count;
+}
+
 uint16_t FDD_Flux_Read(uint16_t *dst, uint16_t max_count)
 {
     uint8_t ea_save;

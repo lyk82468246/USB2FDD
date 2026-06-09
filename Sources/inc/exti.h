@@ -33,6 +33,7 @@ uint8_t FDD_Flux_IsCapturing(void);
 uint16_t FDD_Flux_Available(void);
 uint16_t FDD_Flux_GetOverflowCount(void);
 uint8_t FDD_Flux_GetStats(uint16_t *count, uint16_t *min_value, uint16_t *max_value, uint16_t *avg_value);
+uint16_t FDD_Flux_Peek(uint16_t *dst, uint16_t max_count);
 uint16_t FDD_Flux_Read(uint16_t *dst, uint16_t max_count);
 void FDD_Index_Reset(void);
 uint8_t FDD_Index_Wait(uint16_t timeout_ms);
