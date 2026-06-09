@@ -99,6 +99,7 @@ WRITE_GATE_ON
 WRITE_GATE_OFF
 WRITE_DATA 0|1
 WRITE_PULSE us
+WRITE_PULSES count pulse_us gap_us
 STATUS
 DISK_STATUS
 MOTOR 0|1
@@ -161,6 +162,8 @@ FLUX_DRAIN_ASCII
 
 `WRITE_PULSE us` emits one active-low `WDATA#` pulse while `WGATE#` is enabled. The current pulse range is 1..100 us and is intended for oscilloscope or logic-analyzer tests.
 
+`WRITE_PULSES count pulse_us gap_us` emits a short train of active-low `WDATA#` pulses while `WGATE#` is enabled. The current limits are count 1..64, pulse 1..100 us, and gap 0..255 us.
+
 `TRACK_INVALIDATE` marks the software track position as unknown. The next seek will home the drive first.
 
 `CAPTURE_TS track side` seeks to a track, selects side 0 or 1, and captures one revolution.
@@ -202,6 +205,7 @@ WRITE_GATE_ON
 WRITE_GATE_OFF
 WRITE_DATA 0|1
 WRITE_PULSE us
+WRITE_PULSES count pulse_us gap_us
 STATUS
 DISK_STATUS
 MOTOR 0|1
@@ -263,6 +267,8 @@ FLUX_DRAIN_ASCII
 `WRITE_DATA 0|1` 只在 `WGATE#` 已打开时改变逻辑写数据状态。`1` 表示写数据有效脉冲态，因此低有效的 `WDATA#` 会被拉低。
 
 `WRITE_PULSE us` 会在 `WGATE#` 已打开时输出一个低有效 `WDATA#` 脉冲。当前脉宽范围是 1..100 us，用于示波器或逻辑分析仪测试。
+
+`WRITE_PULSES count pulse_us gap_us` 会在 `WGATE#` 已打开时输出一小串低有效 `WDATA#` 脉冲。当前限制为 count 1..64、pulse 1..100 us、gap 0..255 us。
 
 `TRACK_INVALIDATE` 会将固件中的软件磁道位置标记为未知。下一次寻道会先自动回零。
 
