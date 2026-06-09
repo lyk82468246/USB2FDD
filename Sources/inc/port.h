@@ -36,6 +36,7 @@ void FDD_IO_SetSide(uint8_t side);
 void FDD_IO_SetDensity(uint8_t high_density);
 void FDD_IO_WriteGate(uint8_t enable);
 void FDD_IO_WriteDataIdle(void);
+void FDD_IO_WriteDataActive(uint8_t active);
 uint8_t FDD_IO_Home(void);
 uint8_t FDD_IO_Seek(uint8_t track);
 void FDD_IO_InvalidateTrack(void);

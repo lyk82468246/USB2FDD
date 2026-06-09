@@ -241,6 +241,11 @@ void FDD_IO_WriteDataIdle(void)
     WDATA = 1;
 }
 
+void FDD_IO_WriteDataActive(uint8_t active)
+{
+    WDATA = active ? 0 : 1;
+}
+
 uint8_t FDD_IO_Home(void)
 {
     uint8_t i;
