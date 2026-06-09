@@ -96,6 +96,7 @@ DIR 0|1
 STEP
 HOME
 SEEK n
+TRACK_INVALIDATE
 SIDE 0|1
 DENSEL 0|1
 INDEX_RESET
@@ -131,6 +132,8 @@ FLUX_DRAIN_ASCII
 
 `READY` selects the drive, starts the motor, waits for `INDEX#`, then returns the estimated RPM and index period.
 
+`TRACK_INVALIDATE` marks the software track position as unknown. The next seek will home the drive first.
+
 `CAPTURE_TS track side` seeks to a track, selects side 0 or 1, and captures one revolution.
 
 `CAPTURE_NEXT` captures another revolution on the current track and side.
@@ -165,6 +168,7 @@ DIR 0|1
 STEP
 HOME
 SEEK n
+TRACK_INVALIDATE
 SIDE 0|1
 DENSEL 0|1
 INDEX_RESET
@@ -199,6 +203,8 @@ FLUX_DRAIN_ASCII
 `FLUX_STATS` 返回当前已停止采集缓冲区的样本数、最小间隔、最大间隔、平均间隔和溢出次数，不会消耗 `FLUX_READ` 数据。
 
 `READY` 会选中软驱、启动马达、等待 `INDEX#`，然后返回估算 RPM 和 index 周期。
+
+`TRACK_INVALIDATE` 会将固件中的软件磁道位置标记为未知。下一次寻道会先自动回零。
 
 `CAPTURE_TS track side` 会寻道到指定磁道、选择 0/1 磁头面，并采集一圈。
 

@@ -38,6 +38,7 @@ void FDD_IO_WriteGate(uint8_t enable);
 void FDD_IO_WriteDataIdle(void);
 uint8_t FDD_IO_Home(void);
 uint8_t FDD_IO_Seek(uint8_t track);
+void FDD_IO_InvalidateTrack(void);
 uint8_t FDD_IO_GetTrack(uint8_t *track);
 uint8_t FDD_IO_IsSelected(void);
 uint8_t FDD_IO_IsMotorOn(void);

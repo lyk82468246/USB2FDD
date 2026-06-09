@@ -302,6 +302,11 @@ uint8_t FDD_IO_Seek(uint8_t track)
     return 1;
 }
 
+void FDD_IO_InvalidateTrack(void)
+{
+    g_fdd_track_valid = 0;
+}
+
 uint8_t FDD_IO_GetTrack(uint8_t *track)
 {
     if (!g_fdd_track_valid)
