@@ -39,9 +39,16 @@ static void FDD_USB_SendFluxStats(void);
 static void FDD_USB_SendFlux(void);
 static void FDD_USB_SendFluxDrain(void);
 static void FDD_USB_SendFluxPeek(void);
+static void FDD_USB_SendFluxCount(uint8_t requested);
+static void FDD_USB_SendFluxDrainCount(uint8_t requested);
+static void FDD_USB_SendFluxPeekCount(uint8_t requested);
+static void FDD_USB_SkipFlux(uint8_t requested);
 static void FDD_USB_SendFluxAscii(void);
 static void FDD_USB_SendFluxPeekAscii(void);
 static void FDD_USB_SendFluxDrainAscii(void);
+static void FDD_USB_SendFluxAsciiCount(uint8_t requested);
+static void FDD_USB_SendFluxPeekAsciiCount(uint8_t requested);
+static void FDD_USB_SendFluxDrainAsciiCount(uint8_t requested);
 static void FDD_USB_SendFluxAsciiSamples(const char *tag, uint16_t count);
 static void FDD_USB_SendRpm(void);
 static void FDD_USB_ReadyDrive(void);
@@ -761,18 +768,28 @@ static void FDD_USB_SendHelp(void)
     FDD_USB_SendText("CMDS SAFE READY MOTOR_ON MOTOR_OFF\r\n");
     FDD_USB_SendText("CMDS DRIVE_SELECT_ON DRIVE_SELECT_OFF MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL\r\n");
     FDD_USB_SendText("CMDS INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS\r\n");
-    FDD_USB_SendText("CMDS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_DRAIN FLUX_PEEK\r\n");
-    FDD_USB_SendText("CMDS FLUX_READ_ASCII FLUX_PEEK_ASCII FLUX_DRAIN_ASCII\r\n");
+    FDD_USB_SendText("CMDS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_READ_N FLUX_DRAIN FLUX_DRAIN_N\r\n");
+    FDD_USB_SendText("CMDS FLUX_PEEK FLUX_PEEK_N FLUX_SKIP\r\n");
+    FDD_USB_SendText("CMDS FLUX_READ_ASCII FLUX_READ_ASCII_N FLUX_PEEK_ASCII FLUX_PEEK_ASCII_N\r\n");
+    FDD_USB_SendText("CMDS FLUX_DRAIN_ASCII FLUX_DRAIN_ASCII_N\r\n");
     FDD_USB_SendText("CMDS WRITE_ARM WRITE_DISARM WRITE_GATE_ON WRITE_GATE_ON_INDEX WRITE_GATE_OFF WRITE_GATE_OFF_INDEX\r\n");
     FDD_USB_SendText("CMDS WRITE_DATA WRITE_PULSE WRITE_PULSES WRITE_CLOCK\r\n");
 }
 
 static void FDD_USB_SendFlux(void)
 {
+    FDD_USB_SendFluxCount(31);
+}
+
+static void FDD_USB_SendFluxCount(uint8_t requested)
+{
     uint8_t i;
     uint8_t count;
 
-    count = (uint8_t)FDD_Flux_Read(g_usb_flux_samples, 31);
+    if (requested > 31)
+        requested = 31;
+
+    count = (uint8_t)FDD_Flux_Read(g_usb_flux_samples, requested);
     g_usb_flux_resp[0] = 'F';
     g_usb_flux_resp[1] = count;
 
@@ -787,11 +804,19 @@ static void FDD_USB_SendFlux(void)
 
 static void FDD_USB_SendFluxDrain(void)
 {
+    FDD_USB_SendFluxDrainCount(30);
+}
+
+static void FDD_USB_SendFluxDrainCount(uint8_t requested)
+{
     uint8_t i;
     uint8_t count;
     uint16_t remaining;
 
-    count = (uint8_t)FDD_Flux_Read(g_usb_flux_samples, 30);
+    if (requested > 30)
+        requested = 30;
+
+    count = (uint8_t)FDD_Flux_Read(g_usb_flux_samples, requested);
     remaining = FDD_Flux_Available();
     g_usb_flux_resp[0] = 'D';
     g_usb_flux_resp[1] = count;
@@ -809,10 +834,18 @@ static void FDD_USB_SendFluxDrain(void)
 
 static void FDD_USB_SendFluxPeek(void)
 {
+    FDD_USB_SendFluxPeekCount(31);
+}
+
+static void FDD_USB_SendFluxPeekCount(uint8_t requested)
+{
     uint8_t i;
     uint8_t count;
 
-    count = (uint8_t)FDD_Flux_Peek(g_usb_flux_samples, 31);
+    if (requested > 31)
+        requested = 31;
+
+    count = (uint8_t)FDD_Flux_Peek(g_usb_flux_samples, requested);
     g_usb_flux_resp[0] = 'P';
     g_usb_flux_resp[1] = count;
 
@@ -823,6 +856,31 @@ static void FDD_USB_SendFluxPeek(void)
     }
 
     USB_SendData(g_usb_flux_resp, 2 + count * 2);
+}
+
+static void FDD_USB_SkipFlux(uint8_t requested)
+{
+    uint8_t chunk;
+    uint8_t skipped;
+    uint8_t total;
+
+    total = 0;
+    while (requested)
+    {
+        chunk = requested;
+        if (chunk > 31)
+            chunk = 31;
+
+        skipped = (uint8_t)FDD_Flux_Read(g_usb_flux_samples, chunk);
+        total = (uint8_t)(total + skipped);
+        requested = (uint8_t)(requested - skipped);
+
+        if (skipped < chunk)
+            break;
+    }
+
+    sprintf(g_usb_text_resp, "OK FLUX_SKIP N=%u REM=%u\r\n", total, FDD_Flux_Available());
+    FDD_USB_SendText(g_usb_text_resp);
 }
 
 static void FDD_USB_SendFluxAsciiSamples(const char *tag, uint16_t count)
@@ -843,27 +901,51 @@ static void FDD_USB_SendFluxAsciiSamples(const char *tag, uint16_t count)
 
 static void FDD_USB_SendFluxAscii(void)
 {
+    FDD_USB_SendFluxAsciiCount(8);
+}
+
+static void FDD_USB_SendFluxAsciiCount(uint8_t requested)
+{
     uint8_t count;
 
-    count = (uint8_t)FDD_Flux_Read(g_usb_flux_samples, 8);
+    if (requested > 16)
+        requested = 16;
+
+    count = (uint8_t)FDD_Flux_Read(g_usb_flux_samples, requested);
     FDD_USB_SendFluxAsciiSamples("FLUX_ASCII", count);
 }
 
 static void FDD_USB_SendFluxPeekAscii(void)
 {
+    FDD_USB_SendFluxPeekAsciiCount(8);
+}
+
+static void FDD_USB_SendFluxPeekAsciiCount(uint8_t requested)
+{
     uint8_t count;
 
-    count = (uint8_t)FDD_Flux_Peek(g_usb_flux_samples, 8);
+    if (requested > 16)
+        requested = 16;
+
+    count = (uint8_t)FDD_Flux_Peek(g_usb_flux_samples, requested);
     FDD_USB_SendFluxAsciiSamples("FLUX_PEEK", count);
 }
 
 static void FDD_USB_SendFluxDrainAscii(void)
 {
+    FDD_USB_SendFluxDrainAsciiCount(8);
+}
+
+static void FDD_USB_SendFluxDrainAsciiCount(uint8_t requested)
+{
     uint8_t i;
     uint8_t count;
     uint16_t remaining;
 
-    count = (uint8_t)FDD_Flux_Read(g_usb_flux_samples, 8);
+    if (requested > 16)
+        requested = 16;
+
+    count = (uint8_t)FDD_Flux_Read(g_usb_flux_samples, requested);
     remaining = FDD_Flux_Available();
     sprintf(g_usb_text_resp, "FLUX_DRAIN N=%u REM=%u", count, remaining);
     FDD_USB_SendText(g_usb_text_resp);
@@ -1178,25 +1260,74 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     {
         FDD_USB_SendFlux();
     }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "FLUX_READ_N "))
+    {
+        if (FDD_USB_ParseU8(&g_usb_cmd[12], &value))
+            FDD_USB_SendFluxCount(value);
+        else
+            FDD_USB_SendText("ERR FLUX_READ_N ARG\r\n");
+    }
     else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_DRAIN"))
     {
         FDD_USB_SendFluxDrain();
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "FLUX_DRAIN_N "))
+    {
+        if (FDD_USB_ParseU8(&g_usb_cmd[13], &value))
+            FDD_USB_SendFluxDrainCount(value);
+        else
+            FDD_USB_SendText("ERR FLUX_DRAIN_N ARG\r\n");
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_PEEK"))
     {
         FDD_USB_SendFluxPeek();
     }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "FLUX_PEEK_N "))
+    {
+        if (FDD_USB_ParseU8(&g_usb_cmd[12], &value))
+            FDD_USB_SendFluxPeekCount(value);
+        else
+            FDD_USB_SendText("ERR FLUX_PEEK_N ARG\r\n");
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "FLUX_SKIP "))
+    {
+        if (FDD_USB_ParseU8(&g_usb_cmd[10], &value))
+            FDD_USB_SkipFlux(value);
+        else
+            FDD_USB_SendText("ERR FLUX_SKIP ARG\r\n");
+    }
     else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_READ_ASCII"))
     {
         FDD_USB_SendFluxAscii();
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "FLUX_READ_ASCII_N "))
+    {
+        if (FDD_USB_ParseU8(&g_usb_cmd[18], &value))
+            FDD_USB_SendFluxAsciiCount(value);
+        else
+            FDD_USB_SendText("ERR FLUX_READ_ASCII_N ARG\r\n");
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_PEEK_ASCII"))
     {
         FDD_USB_SendFluxPeekAscii();
     }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "FLUX_PEEK_ASCII_N "))
+    {
+        if (FDD_USB_ParseU8(&g_usb_cmd[18], &value))
+            FDD_USB_SendFluxPeekAsciiCount(value);
+        else
+            FDD_USB_SendText("ERR FLUX_PEEK_ASCII_N ARG\r\n");
+    }
     else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_DRAIN_ASCII"))
     {
         FDD_USB_SendFluxDrainAscii();
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "FLUX_DRAIN_ASCII_N "))
+    {
+        if (FDD_USB_ParseU8(&g_usb_cmd[19], &value))
+            FDD_USB_SendFluxDrainAsciiCount(value);
+        else
+            FDD_USB_SendText("ERR FLUX_DRAIN_ASCII_N ARG\r\n");
     }
     else
     {

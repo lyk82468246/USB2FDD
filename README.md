@@ -135,11 +135,18 @@ CAPTURE_NEXT
 CAPTURE_TRACK n
 CAPTURE_TS track side
 FLUX_READ
+FLUX_READ_N n
 FLUX_DRAIN
+FLUX_DRAIN_N n
 FLUX_PEEK
+FLUX_PEEK_N n
+FLUX_SKIP n
 FLUX_READ_ASCII
+FLUX_READ_ASCII_N n
 FLUX_PEEK_ASCII
+FLUX_PEEK_ASCII_N n
 FLUX_DRAIN_ASCII
+FLUX_DRAIN_ASCII_N n
 ```
 
 `FLUX_READ` returns a binary packet:
@@ -147,6 +154,10 @@ FLUX_DRAIN_ASCII
 - Byte 0: ASCII `F`
 - Byte 1: sample count
 - Remaining bytes: little-endian `uint16_t` timer intervals
+
+`FLUX_READ_N n`, `FLUX_PEEK_N n`, and `FLUX_DRAIN_N n` are count-limited binary variants. Read and peek are capped at 31 samples; drain is capped at 30 samples.
+
+`FLUX_SKIP n` discards up to `n` pending flux samples and reports the actual skipped count and remaining count.
 
 `FLUX_INFO` returns capture state, remaining sample count, overflow count, and the last measured index period.
 
@@ -191,6 +202,8 @@ FLUX_DRAIN_ASCII
 `FLUX_CLEAR` clears the current flux buffer, equivalent to `FLUX_RESET` with a name that is friendlier for host-side scripts.
 
 `FLUX_READ_ASCII` consumes up to 8 flux samples and returns them as text for quick manual inspection.
+
+`FLUX_READ_ASCII_N n`, `FLUX_PEEK_ASCII_N n`, and `FLUX_DRAIN_ASCII_N n` are count-limited text variants capped at 16 samples per response.
 
 `FLUX_PEEK` returns up to 31 flux samples in the same binary format as `FLUX_READ`, but uses packet header `P` and does not consume samples.
 
@@ -261,11 +274,18 @@ CAPTURE_NEXT
 CAPTURE_TRACK n
 CAPTURE_TS track side
 FLUX_READ
+FLUX_READ_N n
 FLUX_DRAIN
+FLUX_DRAIN_N n
 FLUX_PEEK
+FLUX_PEEK_N n
+FLUX_SKIP n
 FLUX_READ_ASCII
+FLUX_READ_ASCII_N n
 FLUX_PEEK_ASCII
+FLUX_PEEK_ASCII_N n
 FLUX_DRAIN_ASCII
+FLUX_DRAIN_ASCII_N n
 ```
 
 `FLUX_READ` 返回二进制包：
@@ -273,6 +293,10 @@ FLUX_DRAIN_ASCII
 - 第 0 字节：ASCII `F`
 - 第 1 字节：样本数量
 - 后续数据：little-endian `uint16_t` 定时器间隔样本
+
+`FLUX_READ_N n`、`FLUX_PEEK_N n` 和 `FLUX_DRAIN_N n` 是可指定数量的二进制版本。read/peek 上限为 31 个样本，drain 上限为 30 个样本。
+
+`FLUX_SKIP n` 会丢弃最多 `n` 个待读取磁通样本，并报告实际跳过数量和剩余数量。
 
 `FLUX_INFO` 返回磁通采集状态、剩余样本数、溢出次数和最近一次 `INDEX#` 周期。
 
@@ -317,6 +341,8 @@ FLUX_DRAIN_ASCII
 `FLUX_CLEAR` 用于清空当前磁通缓冲，功能等价于 `FLUX_RESET`，但更适合上位机脚本表达语义。
 
 `FLUX_READ_ASCII` 会消耗最多 8 个磁通样本，并以文本形式返回，方便手工快速查看。
+
+`FLUX_READ_ASCII_N n`、`FLUX_PEEK_ASCII_N n` 和 `FLUX_DRAIN_ASCII_N n` 是可指定数量的文本版本，每次响应上限为 16 个样本。
 
 `FLUX_PEEK` 会用和 `FLUX_READ` 类似的二进制格式返回最多 31 个磁通样本，但包头为 `P`，并且不会消耗样本。
 
