@@ -96,6 +96,7 @@ DRIVE_SELECT_OFF
 WRITE_ARM
 WRITE_DISARM
 WRITE_GATE_ON
+WRITE_GATE_ON_INDEX
 WRITE_GATE_OFF
 WRITE_DATA 0|1
 WRITE_PULSE us
@@ -157,6 +158,8 @@ FLUX_DRAIN_ASCII
 
 `WRITE_GATE_ON` enables `WGATE#` only after `WRITE_ARM` and repeats the selected-drive, motor, and write-protect checks. It also stops flux capture before enabling the write gate.
 
+`WRITE_GATE_ON_INDEX` performs the same safety checks as `WRITE_GATE_ON`, waits for `INDEX#`, then enables `WGATE#`.
+
 `WRITE_GATE_OFF` disables `WGATE#` and idles `WDATA#`; `WRITE_DISARM` also clears the write arm state.
 
 `WRITE_DATA 0|1` changes the logical write data state only while `WGATE#` is enabled. `1` means active write-data pulse state, so the active-low `WDATA#` line is driven low.
@@ -205,6 +208,7 @@ DRIVE_SELECT_OFF
 WRITE_ARM
 WRITE_DISARM
 WRITE_GATE_ON
+WRITE_GATE_ON_INDEX
 WRITE_GATE_OFF
 WRITE_DATA 0|1
 WRITE_PULSE us
@@ -265,6 +269,8 @@ FLUX_DRAIN_ASCII
 `WRITE_ARM` 只有在已选驱、马达已启动且磁盘没有写保护时，才会允许后续写操作。
 
 `WRITE_GATE_ON` 必须先执行 `WRITE_ARM`，并会再次检查选驱、马达和写保护状态；打开写门前也会停止磁通采集。
+
+`WRITE_GATE_ON_INDEX` 执行与 `WRITE_GATE_ON` 相同的安全检查，等待 `INDEX#` 后再打开 `WGATE#`。
 
 `WRITE_GATE_OFF` 会关闭 `WGATE#` 并让 `WDATA#` 回到空闲；`WRITE_DISARM` 还会清除写入 arm 状态。
 

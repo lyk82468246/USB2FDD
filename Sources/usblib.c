@@ -47,6 +47,7 @@ static void FDD_USB_WriteForceOff(void);
 static void FDD_USB_WriteArm(void);
 static void FDD_USB_WriteDisarm(void);
 static void FDD_USB_WriteGateOn(void);
+static void FDD_USB_WriteGateOnIndex(void);
 static void FDD_USB_WriteGateOff(void);
 static void FDD_USB_WriteData(uint8_t active);
 static void FDD_USB_WritePulse(uint8_t pulse_us);
@@ -460,6 +461,51 @@ static void FDD_USB_WriteGateOn(void)
     FDD_USB_SendText("OK WRITE_GATE_ON\r\n");
 }
 
+static void FDD_USB_WriteGateOnIndex(void)
+{
+    if (!g_usb_write_armed)
+    {
+        FDD_USB_SendText("ERR WRITE_GATE_ON_INDEX NOT_ARMED\r\n");
+        return;
+    }
+
+    if (!FDD_IO_IsSelected())
+    {
+        FDD_USB_WriteForceOff();
+        FDD_USB_SendText("ERR WRITE_GATE_ON_INDEX NO_SELECT\r\n");
+        return;
+    }
+
+    if (!FDD_IO_IsMotorOn())
+    {
+        FDD_USB_WriteForceOff();
+        FDD_USB_SendText("ERR WRITE_GATE_ON_INDEX NO_MOTOR\r\n");
+        return;
+    }
+
+    if (FDD_IO_IsWriteProtected())
+    {
+        FDD_USB_WriteForceOff();
+        FDD_USB_SendText("ERR WRITE_GATE_ON_INDEX WRITE_PROTECT\r\n");
+        return;
+    }
+
+    FDD_Index_Reset();
+    if (!FDD_Index_Wait(FDD_INDEX_TIMEOUT_MS))
+    {
+        FDD_USB_WriteForceOff();
+        FDD_USB_SendText("ERR WRITE_GATE_ON_INDEX NO_INDEX\r\n");
+        return;
+    }
+
+    FDD_Flux_Stop();
+    FDD_IO_WriteDataIdle();
+    g_usb_write_data_active = 0;
+    FDD_IO_WriteGate(1);
+    g_usb_write_gate_on = 1;
+    FDD_USB_SendText("OK WRITE_GATE_ON_INDEX\r\n");
+}
+
 static void FDD_USB_WriteGateOff(void)
 {
     FDD_IO_WriteGate(0);
@@ -570,7 +616,7 @@ static void FDD_USB_WriteClock(uint8_t count, uint8_t cell_us)
 
 static void FDD_USB_SendHelp(void)
 {
-    FDD_USB_SendText("CMDS PING HELP SAFE STATUS DISK_STATUS READY MOTOR_ON MOTOR_OFF DRIVE_SELECT_ON DRIVE_SELECT_OFF WRITE_ARM WRITE_DISARM WRITE_GATE_ON WRITE_GATE_OFF WRITE_DATA WRITE_PULSE WRITE_PULSES WRITE_CLOCK MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_DRAIN FLUX_PEEK FLUX_READ_ASCII FLUX_PEEK_ASCII FLUX_DRAIN_ASCII\r\n");
+    FDD_USB_SendText("CMDS PING HELP SAFE STATUS DISK_STATUS READY MOTOR_ON MOTOR_OFF DRIVE_SELECT_ON DRIVE_SELECT_OFF WRITE_ARM WRITE_DISARM WRITE_GATE_ON WRITE_GATE_ON_INDEX WRITE_GATE_OFF WRITE_DATA WRITE_PULSE WRITE_PULSES WRITE_CLOCK MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_DRAIN FLUX_PEEK FLUX_READ_ASCII FLUX_PEEK_ASCII FLUX_DRAIN_ASCII\r\n");
 }
 
 static void FDD_USB_SendFlux(void)
@@ -778,6 +824,10 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     else if (FDD_USB_CmdEq(g_usb_cmd, "WRITE_GATE_ON"))
     {
         FDD_USB_WriteGateOn();
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "WRITE_GATE_ON_INDEX"))
+    {
+        FDD_USB_WriteGateOnIndex();
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "WRITE_GATE_OFF"))
     {
