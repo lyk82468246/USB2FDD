@@ -40,7 +40,7 @@ static void FDD_USB_ReadyDrive(void);
 static void FDD_USB_CaptureRev(void);
 static void FDD_USB_SendHelp(void);
 static char g_usb_cmd[32];
-static char g_usb_text_resp[160];
+static char g_usb_text_resp[220];
 static uint16_t g_usb_flux_samples[31];
 static uint8_t g_usb_flux_resp[2 + 31 * 2];
 //<<AICUBE_USER_GLOBAL_DEFINE_END>>
@@ -189,8 +189,13 @@ static void FDD_USB_SendStatus(void)
     rpm = period_ms ? (uint16_t)(60000UL / period_ms) : 0;
 
     sprintf(g_usb_text_resp,
-            "STAT T=%u T0=%u WP=%u DC=%u IDX=%u IP=%lu RPM=%u CAP=%u FLUX=%u OVF=%u MS=%lu\r\n",
+            "STAT T=%u SEL=%u MOT=%u DIR=%u SIDE=%u DEN=%u T0=%u WP=%u DC=%u IDX=%u IP=%lu RPM=%u CAP=%u FLUX=%u OVF=%u MS=%lu\r\n",
             track,
+            FDD_IO_IsSelected(),
+            FDD_IO_IsMotorOn(),
+            FDD_IO_GetDirection(),
+            FDD_IO_GetSide(),
+            FDD_IO_GetDensity(),
             FDD_IO_IsTrack0(),
             FDD_IO_IsWriteProtected(),
             FDD_IO_IsDiskChanged(),

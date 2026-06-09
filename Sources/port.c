@@ -22,6 +22,11 @@
 // 在此添加用户全局变量定义、用户宏定义以及函数声明  
 static uint8_t g_fdd_track = 0;
 static uint8_t g_fdd_track_valid = 0;
+static uint8_t g_fdd_selected = 0;
+static uint8_t g_fdd_motor_on = 0;
+static uint8_t g_fdd_direction_outward = 0;
+static uint8_t g_fdd_side = 0;
+static uint8_t g_fdd_high_density = 1;
 //<<AICUBE_USER_GLOBAL_DEFINE_END>>
 
 
@@ -181,21 +186,29 @@ void FDD_IO_InitSafe(void)
     STEP = 1;
     g_fdd_track = 0;
     g_fdd_track_valid = 0;
+    g_fdd_selected = 0;
+    g_fdd_motor_on = 0;
+    g_fdd_direction_outward = 0;
+    g_fdd_side = 0;
+    g_fdd_high_density = 1;
 }
 
 void FDD_IO_Select(uint8_t enable)
 {
     DRVSEL = enable ? 0 : 1;
+    g_fdd_selected = enable ? 1 : 0;
 }
 
 void FDD_IO_Motor(uint8_t enable)
 {
     MOTOR = enable ? 0 : 1;
+    g_fdd_motor_on = enable ? 1 : 0;
 }
 
 void FDD_IO_SetDirection(uint8_t outward)
 {
     DIR = outward ? 1 : 0;
+    g_fdd_direction_outward = outward ? 1 : 0;
 }
 
 void FDD_IO_StepPulse(void)
@@ -209,11 +222,13 @@ void FDD_IO_StepPulse(void)
 void FDD_IO_SetSide(uint8_t side)
 {
     SIDE = side ? 0 : 1;
+    g_fdd_side = side ? 1 : 0;
 }
 
 void FDD_IO_SetDensity(uint8_t high_density)
 {
     DENSEL = high_density ? 0 : 1;
+    g_fdd_high_density = high_density ? 1 : 0;
 }
 
 void FDD_IO_WriteGate(uint8_t enable)
@@ -294,6 +309,31 @@ uint8_t FDD_IO_GetTrack(uint8_t *track)
 
     *track = g_fdd_track;
     return 1;
+}
+
+uint8_t FDD_IO_IsSelected(void)
+{
+    return g_fdd_selected;
+}
+
+uint8_t FDD_IO_IsMotorOn(void)
+{
+    return g_fdd_motor_on;
+}
+
+uint8_t FDD_IO_GetDirection(void)
+{
+    return g_fdd_direction_outward;
+}
+
+uint8_t FDD_IO_GetSide(void)
+{
+    return g_fdd_side;
+}
+
+uint8_t FDD_IO_GetDensity(void)
+{
+    return g_fdd_high_density;
 }
 
 uint8_t FDD_IO_IsTrack0(void)

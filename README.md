@@ -147,6 +147,8 @@ FLUX_DRAIN_ASCII
 
 `FLUX_DRAIN_ASCII` consumes up to 8 flux samples, returns them as text, and also reports the remaining sample count.
 
+`STATUS` reports the current software view of selected drive, motor, direction, side, density, track position, index period, RPM, capture state, flux sample count, and overflow count.
+
 ## USB CDC 命令
 
 文本命令不区分大小写。
@@ -213,6 +215,8 @@ FLUX_DRAIN_ASCII
 `FLUX_PEEK_ASCII` 会以文本形式返回最多 8 个磁通样本，但不会消耗这些样本。
 
 `FLUX_DRAIN_ASCII` 会消耗最多 8 个磁通样本，以文本形式返回，并同时报告剩余样本数。
+
+`STATUS` 会返回当前固件的软件状态，包括选驱、马达、方向、磁头面、密度、磁道位置、index 周期、RPM、采集状态、磁通样本数和溢出次数。
 
 ## Suggested Bring-Up Flow
 
