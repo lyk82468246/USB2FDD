@@ -89,6 +89,7 @@ PING
 HELP
 SAFE
 READY
+MOTOR_ON
 MOTOR_OFF
 DRIVE_SELECT_ON
 DRIVE_SELECT_OFF
@@ -135,6 +136,8 @@ FLUX_DRAIN_ASCII
 
 `READY` selects the drive, starts the motor, waits for `INDEX#`, then returns the estimated RPM and index period.
 
+`MOTOR_ON` starts the motor without changing drive select state or waiting for `INDEX#`.
+
 `MOTOR_OFF` stops flux capture, clears the flux buffer, disables write gate, idles write data, deselects the drive, and stops the motor.
 
 `DRIVE_SELECT_OFF` stops flux capture, disables write gate, idles write data, and deselects the drive without stopping the motor.
@@ -170,6 +173,7 @@ PING
 HELP
 SAFE
 READY
+MOTOR_ON
 MOTOR_OFF
 DRIVE_SELECT_ON
 DRIVE_SELECT_OFF
@@ -215,6 +219,8 @@ FLUX_DRAIN_ASCII
 `FLUX_STATS` 返回当前已停止采集缓冲区的样本数、最小间隔、最大间隔、平均间隔和溢出次数，不会消耗 `FLUX_READ` 数据。
 
 `READY` 会选中软驱、启动马达、等待 `INDEX#`，然后返回估算 RPM 和 index 周期。
+
+`MOTOR_ON` 只启动马达，不改变选驱状态，也不等待 `INDEX#`。
 
 `MOTOR_OFF` 会停止磁通采集、清空磁通缓冲、关闭写门控、让写数据回到空闲、取消选驱并关闭马达。
 
