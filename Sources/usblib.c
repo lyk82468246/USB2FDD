@@ -48,6 +48,7 @@ static void FDD_USB_WriteDisarm(void);
 static void FDD_USB_WriteGateOn(void);
 static void FDD_USB_WriteGateOff(void);
 static void FDD_USB_WriteData(uint8_t active);
+static void FDD_USB_WritePulse(uint8_t pulse_us);
 static void FDD_USB_CaptureRev(void);
 static void FDD_USB_SendHelp(void);
 static char g_usb_cmd[32];
@@ -454,9 +455,31 @@ static void FDD_USB_WriteData(uint8_t active)
     FDD_USB_SendText("OK WRITE_DATA\r\n");
 }
 
+static void FDD_USB_WritePulse(uint8_t pulse_us)
+{
+    if (!g_usb_write_gate_on)
+    {
+        FDD_USB_SendText("ERR WRITE_PULSE NO_WRITE_GATE\r\n");
+        return;
+    }
+
+    if ((pulse_us == 0) || (pulse_us > FDD_WRITE_PULSE_MAX_US))
+    {
+        FDD_USB_SendText("ERR WRITE_PULSE RANGE\r\n");
+        return;
+    }
+
+    FDD_IO_WriteDataActive(1);
+    g_usb_write_data_active = 1;
+    delay_us(pulse_us);
+    FDD_IO_WriteDataActive(0);
+    g_usb_write_data_active = 0;
+    FDD_USB_SendText("OK WRITE_PULSE\r\n");
+}
+
 static void FDD_USB_SendHelp(void)
 {
-    FDD_USB_SendText("CMDS PING HELP SAFE STATUS DISK_STATUS READY MOTOR_ON MOTOR_OFF DRIVE_SELECT_ON DRIVE_SELECT_OFF WRITE_ARM WRITE_DISARM WRITE_GATE_ON WRITE_GATE_OFF WRITE_DATA MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_DRAIN FLUX_PEEK FLUX_READ_ASCII FLUX_PEEK_ASCII FLUX_DRAIN_ASCII\r\n");
+    FDD_USB_SendText("CMDS PING HELP SAFE STATUS DISK_STATUS READY MOTOR_ON MOTOR_OFF DRIVE_SELECT_ON DRIVE_SELECT_OFF WRITE_ARM WRITE_DISARM WRITE_GATE_ON WRITE_GATE_OFF WRITE_DATA WRITE_PULSE MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_DRAIN FLUX_PEEK FLUX_READ_ASCII FLUX_PEEK_ASCII FLUX_DRAIN_ASCII\r\n");
 }
 
 static void FDD_USB_SendFlux(void)
@@ -672,6 +695,13 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     else if (FDD_USB_CmdStarts(g_usb_cmd, "WRITE_DATA "))
     {
         FDD_USB_WriteData(g_usb_cmd[11] == '1');
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "WRITE_PULSE "))
+    {
+        if (FDD_USB_ParseU8(&g_usb_cmd[12], &value))
+            FDD_USB_WritePulse(value);
+        else
+            FDD_USB_SendText("ERR WRITE_PULSE ARG\r\n");
     }
     else if (FDD_USB_CmdStarts(g_usb_cmd, "MOTOR "))
     {
