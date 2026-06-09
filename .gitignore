@@ -2,6 +2,7 @@ Listings/
 Objects/
 *.uvgui.*
 *.uvguix.*
+*.uvopt
 FDD_bk*.uvproj
 *.bak
 *.tmp
