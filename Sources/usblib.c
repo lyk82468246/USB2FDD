@@ -51,6 +51,7 @@ static void FDD_USB_WriteGateOff(void);
 static void FDD_USB_WriteData(uint8_t active);
 static void FDD_USB_WritePulse(uint8_t pulse_us);
 static void FDD_USB_WritePulses(uint8_t count, uint8_t pulse_us, uint8_t gap_us);
+static void FDD_USB_WriteClock(uint8_t count, uint8_t cell_us);
 static void FDD_USB_CaptureRev(void);
 static void FDD_USB_SendHelp(void);
 static char g_usb_cmd[32];
@@ -535,9 +536,41 @@ static void FDD_USB_WritePulses(uint8_t count, uint8_t pulse_us, uint8_t gap_us)
     FDD_USB_SendText("OK WRITE_PULSES\r\n");
 }
 
+static void FDD_USB_WriteClock(uint8_t count, uint8_t cell_us)
+{
+    uint8_t i;
+    uint8_t gap_us;
+
+    if (!g_usb_write_gate_on)
+    {
+        FDD_USB_SendText("ERR WRITE_CLOCK NO_WRITE_GATE\r\n");
+        return;
+    }
+
+    if ((count == 0) || (count > FDD_WRITE_CLOCK_MAX) ||
+        (cell_us <= FDD_WRITE_CLOCK_PULSE_US))
+    {
+        FDD_USB_SendText("ERR WRITE_CLOCK RANGE\r\n");
+        return;
+    }
+
+    gap_us = (uint8_t)(cell_us - FDD_WRITE_CLOCK_PULSE_US);
+    for (i = 0; i < count; i++)
+    {
+        FDD_IO_WriteDataActive(1);
+        g_usb_write_data_active = 1;
+        delay_us(FDD_WRITE_CLOCK_PULSE_US);
+        FDD_IO_WriteDataActive(0);
+        g_usb_write_data_active = 0;
+        delay_us(gap_us);
+    }
+
+    FDD_USB_SendText("OK WRITE_CLOCK\r\n");
+}
+
 static void FDD_USB_SendHelp(void)
 {
-    FDD_USB_SendText("CMDS PING HELP SAFE STATUS DISK_STATUS READY MOTOR_ON MOTOR_OFF DRIVE_SELECT_ON DRIVE_SELECT_OFF WRITE_ARM WRITE_DISARM WRITE_GATE_ON WRITE_GATE_OFF WRITE_DATA WRITE_PULSE WRITE_PULSES MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_DRAIN FLUX_PEEK FLUX_READ_ASCII FLUX_PEEK_ASCII FLUX_DRAIN_ASCII\r\n");
+    FDD_USB_SendText("CMDS PING HELP SAFE STATUS DISK_STATUS READY MOTOR_ON MOTOR_OFF DRIVE_SELECT_ON DRIVE_SELECT_OFF WRITE_ARM WRITE_DISARM WRITE_GATE_ON WRITE_GATE_OFF WRITE_DATA WRITE_PULSE WRITE_PULSES WRITE_CLOCK MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_DRAIN FLUX_PEEK FLUX_READ_ASCII FLUX_PEEK_ASCII FLUX_DRAIN_ASCII\r\n");
 }
 
 static void FDD_USB_SendFlux(void)
@@ -767,6 +800,13 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
             FDD_USB_WritePulse(value);
         else
             FDD_USB_SendText("ERR WRITE_PULSE ARG\r\n");
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "WRITE_CLOCK "))
+    {
+        if (FDD_USB_ParseTwoU8(&g_usb_cmd[12], &value, &value2))
+            FDD_USB_WriteClock(value, value2);
+        else
+            FDD_USB_SendText("ERR WRITE_CLOCK ARG\r\n");
     }
     else if (FDD_USB_CmdStarts(g_usb_cmd, "MOTOR "))
     {

@@ -100,6 +100,7 @@ WRITE_GATE_OFF
 WRITE_DATA 0|1
 WRITE_PULSE us
 WRITE_PULSES count pulse_us gap_us
+WRITE_CLOCK count cell_us
 STATUS
 DISK_STATUS
 MOTOR 0|1
@@ -164,6 +165,8 @@ FLUX_DRAIN_ASCII
 
 `WRITE_PULSES count pulse_us gap_us` emits a short train of active-low `WDATA#` pulses while `WGATE#` is enabled. The current limits are count 1..64, pulse 1..100 us, and gap 0..255 us.
 
+`WRITE_CLOCK count cell_us` emits fixed-cell test pulses while `WGATE#` is enabled. Each cell contains one 2 us active-low `WDATA#` pulse, and the current count limit is 1..128.
+
 `TRACK_INVALIDATE` marks the software track position as unknown. The next seek will home the drive first.
 
 `CAPTURE_TS track side` seeks to a track, selects side 0 or 1, and captures one revolution.
@@ -206,6 +209,7 @@ WRITE_GATE_OFF
 WRITE_DATA 0|1
 WRITE_PULSE us
 WRITE_PULSES count pulse_us gap_us
+WRITE_CLOCK count cell_us
 STATUS
 DISK_STATUS
 MOTOR 0|1
@@ -269,6 +273,8 @@ FLUX_DRAIN_ASCII
 `WRITE_PULSE us` 会在 `WGATE#` 已打开时输出一个低有效 `WDATA#` 脉冲。当前脉宽范围是 1..100 us，用于示波器或逻辑分析仪测试。
 
 `WRITE_PULSES count pulse_us gap_us` 会在 `WGATE#` 已打开时输出一小串低有效 `WDATA#` 脉冲。当前限制为 count 1..64、pulse 1..100 us、gap 0..255 us。
+
+`WRITE_CLOCK count cell_us` 会在 `WGATE#` 已打开时输出固定 bit-cell 间隔测试脉冲。每个 cell 包含一个 2 us 的低有效 `WDATA#` 脉冲，当前 count 限制为 1..128。
 
 `TRACK_INVALIDATE` 会将固件中的软件磁道位置标记为未知。下一次寻道会先自动回零。
 
