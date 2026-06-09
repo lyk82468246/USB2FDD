@@ -94,6 +94,11 @@ SIGNALS
 WRITE_LIMITS
 CAPTURE_STATUS
 SAFE
+ABORT
+QUIESCE
+SESSION_BEGIN
+SESSION_END
+SESSION_STATUS
 READY
 MOTOR_ON
 MOTOR_OFF
@@ -165,6 +170,18 @@ FLUX_DRAIN_ASCII_N n
 `FLUX_INFO` returns capture state, remaining sample count, overflow count, and the last measured index period.
 
 `VERSION`, `LIMITS`, `SIGNALS`, `WRITE_LIMITS`, and `CAPTURE_STATUS` are read-only discovery commands for host-side scripts. They report firmware identity, configured limits, current signal state, write-test limits, and capture status.
+
+`SAFE` stops and clears flux capture, disables write gate, idles write data, and returns all FDD outputs to the safe idle state.
+
+`ABORT` stops flux capture and forces the write side safe without changing drive select or motor state.
+
+`QUIESCE` stops and clears flux capture, forces the write side safe, deselects the drive, and stops the motor.
+
+`SESSION_BEGIN` starts a host-script session by stopping capture, forcing the write side safe, selecting the drive, starting the motor, and resetting index measurement.
+
+`SESSION_END` performs a full session cleanup: stop/clear capture, force the write side safe, deselect the drive, and stop the motor.
+
+`SESSION_STATUS` reports selected drive, motor, capture, write gate, write data, and pending flux sample state.
 
 `FLUX_STATS` returns sample count, minimum interval, maximum interval, average interval, and overflow count for the current stopped capture buffer. It does not consume samples.
 
@@ -242,6 +259,11 @@ SIGNALS
 WRITE_LIMITS
 CAPTURE_STATUS
 SAFE
+ABORT
+QUIESCE
+SESSION_BEGIN
+SESSION_END
+SESSION_STATUS
 READY
 MOTOR_ON
 MOTOR_OFF
@@ -313,6 +335,18 @@ FLUX_DRAIN_ASCII_N n
 `FLUX_INFO` 返回磁通采集状态、剩余样本数、溢出次数和最近一次 `INDEX#` 周期。
 
 `VERSION`、`LIMITS`、`SIGNALS`、`WRITE_LIMITS` 和 `CAPTURE_STATUS` 是只读发现命令，方便上位机脚本读取固件身份、配置限制、当前信号状态、写入测试限制和采集状态。
+
+`SAFE` 会停止并清空磁通采集、关闭写门、让写数据回到空闲，并把所有软驱输出恢复到安全空闲态。
+
+`ABORT` 会停止磁通采集并强制写入侧进入安全状态，但不改变选驱和马达状态。
+
+`QUIESCE` 会停止并清空磁通采集、强制写入侧安全、取消选驱并关闭马达。
+
+`SESSION_BEGIN` 用于开始上位机脚本会话：停止采集、强制写入侧安全、选驱、启动马达并重置 index 测量。
+
+`SESSION_END` 会执行完整会话收尾：停止/清空采集、强制写入侧安全、取消选驱并关闭马达。
+
+`SESSION_STATUS` 会返回选驱、马达、采集、写门、写数据和待读磁通样本状态。
 
 `FLUX_STATS` 返回当前已停止采集缓冲区的样本数、最小间隔、最大间隔、平均间隔和溢出次数，不会消耗 `FLUX_READ` 数据。
 
