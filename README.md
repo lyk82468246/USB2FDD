@@ -90,6 +90,7 @@ HELP
 SAFE
 READY
 MOTOR_OFF
+DRIVE_SELECT_ON
 DRIVE_SELECT_OFF
 STATUS
 MOTOR 0|1
@@ -138,6 +139,8 @@ FLUX_DRAIN_ASCII
 
 `DRIVE_SELECT_OFF` stops flux capture, disables write gate, idles write data, and deselects the drive without stopping the motor.
 
+`DRIVE_SELECT_ON` selects the drive without starting the motor or changing any other control line.
+
 `TRACK_INVALIDATE` marks the software track position as unknown. The next seek will home the drive first.
 
 `CAPTURE_TS track side` seeks to a track, selects side 0 or 1, and captures one revolution.
@@ -168,6 +171,7 @@ HELP
 SAFE
 READY
 MOTOR_OFF
+DRIVE_SELECT_ON
 DRIVE_SELECT_OFF
 STATUS
 MOTOR 0|1
@@ -215,6 +219,8 @@ FLUX_DRAIN_ASCII
 `MOTOR_OFF` 会停止磁通采集、清空磁通缓冲、关闭写门控、让写数据回到空闲、取消选驱并关闭马达。
 
 `DRIVE_SELECT_OFF` 会停止磁通采集、关闭写门控、让写数据回到空闲并取消选驱，但不会关闭马达。
+
+`DRIVE_SELECT_ON` 只会选中软驱，不启动马达，也不改变其它控制线。
 
 `TRACK_INVALIDATE` 会将固件中的软件磁道位置标记为未知。下一次寻道会先自动回零。
 
