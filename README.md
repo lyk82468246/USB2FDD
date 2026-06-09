@@ -115,6 +115,7 @@ FLUX_READ
 FLUX_PEEK
 FLUX_READ_ASCII
 FLUX_PEEK_ASCII
+FLUX_DRAIN_ASCII
 ```
 
 `FLUX_READ` returns a binary packet:
@@ -140,6 +141,8 @@ FLUX_PEEK_ASCII
 `FLUX_PEEK` returns up to 31 flux samples in the same binary format as `FLUX_READ`, but uses packet header `P` and does not consume samples.
 
 `FLUX_PEEK_ASCII` returns up to 8 flux samples as text without consuming them.
+
+`FLUX_DRAIN_ASCII` consumes up to 8 flux samples, returns them as text, and also reports the remaining sample count.
 
 ## USB CDC 命令
 
@@ -176,6 +179,7 @@ FLUX_READ
 FLUX_PEEK
 FLUX_READ_ASCII
 FLUX_PEEK_ASCII
+FLUX_DRAIN_ASCII
 ```
 
 `FLUX_READ` 返回二进制包：
@@ -201,6 +205,8 @@ FLUX_PEEK_ASCII
 `FLUX_PEEK` 会用和 `FLUX_READ` 类似的二进制格式返回最多 31 个磁通样本，但包头为 `P`，并且不会消耗样本。
 
 `FLUX_PEEK_ASCII` 会以文本形式返回最多 8 个磁通样本，但不会消耗这些样本。
+
+`FLUX_DRAIN_ASCII` 会消耗最多 8 个磁通样本，以文本形式返回，并同时报告剩余样本数。
 
 ## Suggested Bring-Up Flow
 

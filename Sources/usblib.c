@@ -32,6 +32,7 @@ static void FDD_USB_SendFlux(void);
 static void FDD_USB_SendFluxPeek(void);
 static void FDD_USB_SendFluxAscii(void);
 static void FDD_USB_SendFluxPeekAscii(void);
+static void FDD_USB_SendFluxDrainAscii(void);
 static void FDD_USB_SendFluxAsciiSamples(const char *tag, uint16_t count);
 static void FDD_USB_SendRpm(void);
 static void FDD_USB_ReadyDrive(void);
@@ -272,7 +273,7 @@ static void FDD_USB_ReadyDrive(void)
 
 static void FDD_USB_SendHelp(void)
 {
-    FDD_USB_SendText("CMDS PING HELP SAFE STATUS READY MOTOR SELECT DIR STEP HOME SEEK SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_PEEK FLUX_READ_ASCII FLUX_PEEK_ASCII\r\n");
+    FDD_USB_SendText("CMDS PING HELP SAFE STATUS READY MOTOR SELECT DIR STEP HOME SEEK SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_PEEK FLUX_READ_ASCII FLUX_PEEK_ASCII FLUX_DRAIN_ASCII\r\n");
 }
 
 static void FDD_USB_SendFlux(void)
@@ -341,6 +342,26 @@ static void FDD_USB_SendFluxPeekAscii(void)
 
     count = (uint8_t)FDD_Flux_Peek(g_usb_flux_samples, 8);
     FDD_USB_SendFluxAsciiSamples("FLUX_PEEK", count);
+}
+
+static void FDD_USB_SendFluxDrainAscii(void)
+{
+    uint8_t i;
+    uint8_t count;
+    uint16_t remaining;
+
+    count = (uint8_t)FDD_Flux_Read(g_usb_flux_samples, 8);
+    remaining = FDD_Flux_Available();
+    sprintf(g_usb_text_resp, "FLUX_DRAIN N=%u REM=%u", count, remaining);
+    FDD_USB_SendText(g_usb_text_resp);
+
+    for (i = 0; i < count; i++)
+    {
+        sprintf(g_usb_text_resp, " %u", g_usb_flux_samples[i]);
+        FDD_USB_SendText(g_usb_text_resp);
+    }
+
+    FDD_USB_SendText("\r\n");
 }
 
 static void FDD_USB_CaptureRev(void)
@@ -542,6 +563,10 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_PEEK_ASCII"))
     {
         FDD_USB_SendFluxPeekAscii();
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_DRAIN_ASCII"))
+    {
+        FDD_USB_SendFluxDrainAscii();
     }
     else
     {
