@@ -112,6 +112,7 @@ CAPTURE_NEXT
 CAPTURE_TRACK n
 CAPTURE_TS track side
 FLUX_READ
+FLUX_DRAIN
 FLUX_PEEK
 FLUX_READ_ASCII
 FLUX_PEEK_ASCII
@@ -139,6 +140,8 @@ FLUX_DRAIN_ASCII
 `FLUX_READ_ASCII` consumes up to 8 flux samples and returns them as text for quick manual inspection.
 
 `FLUX_PEEK` returns up to 31 flux samples in the same binary format as `FLUX_READ`, but uses packet header `P` and does not consume samples.
+
+`FLUX_DRAIN` consumes up to 30 flux samples and returns the remaining sample count in the packet header.
 
 `FLUX_PEEK_ASCII` returns up to 8 flux samples as text without consuming them.
 
@@ -176,6 +179,7 @@ CAPTURE_NEXT
 CAPTURE_TRACK n
 CAPTURE_TS track side
 FLUX_READ
+FLUX_DRAIN
 FLUX_PEEK
 FLUX_READ_ASCII
 FLUX_PEEK_ASCII
@@ -203,6 +207,8 @@ FLUX_DRAIN_ASCII
 `FLUX_READ_ASCII` 会消耗最多 8 个磁通样本，并以文本形式返回，方便手工快速查看。
 
 `FLUX_PEEK` 会用和 `FLUX_READ` 类似的二进制格式返回最多 31 个磁通样本，但包头为 `P`，并且不会消耗样本。
+
+`FLUX_DRAIN` 会消耗最多 30 个磁通样本，并在包头中返回剩余样本数。
 
 `FLUX_PEEK_ASCII` 会以文本形式返回最多 8 个磁通样本，但不会消耗这些样本。
 
