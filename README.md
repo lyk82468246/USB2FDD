@@ -93,6 +93,10 @@ MOTOR_ON
 MOTOR_OFF
 DRIVE_SELECT_ON
 DRIVE_SELECT_OFF
+WRITE_ARM
+WRITE_DISARM
+WRITE_GATE_ON
+WRITE_GATE_OFF
 STATUS
 DISK_STATUS
 MOTOR 0|1
@@ -145,6 +149,12 @@ FLUX_DRAIN_ASCII
 
 `DRIVE_SELECT_ON` selects the drive without starting the motor or changing any other control line.
 
+`WRITE_ARM` arms write operations only when the drive is selected, the motor is on, and the disk is not write-protected.
+
+`WRITE_GATE_ON` enables `WGATE#` only after `WRITE_ARM` and repeats the selected-drive, motor, and write-protect checks. It also stops flux capture before enabling the write gate.
+
+`WRITE_GATE_OFF` disables `WGATE#` and idles `WDATA#`; `WRITE_DISARM` also clears the write arm state.
+
 `TRACK_INVALIDATE` marks the software track position as unknown. The next seek will home the drive first.
 
 `CAPTURE_TS track side` seeks to a track, selects side 0 or 1, and captures one revolution.
@@ -163,9 +173,9 @@ FLUX_DRAIN_ASCII
 
 `FLUX_DRAIN_ASCII` consumes up to 8 flux samples, returns them as text, and also reports the remaining sample count.
 
-`STATUS` reports the current software view of selected drive, motor, direction, side, density, track position, index period, RPM, capture state, flux sample count, and overflow count.
+`STATUS` reports the current software view of selected drive, motor, direction, side, density, write arm/gate state, track position, index period, RPM, capture state, flux sample count, and overflow count.
 
-`DISK_STATUS` reports the current raw-ish disk input view: track 0, write protect, disk change, index, read data, plus selected drive, motor, side, and density software state.
+`DISK_STATUS` reports the current raw-ish disk input view: track 0, write protect, disk change, index, read data, plus selected drive, motor, side, density, and write arm/gate software state.
 
 ## USB CDC 命令
 
@@ -180,6 +190,10 @@ MOTOR_ON
 MOTOR_OFF
 DRIVE_SELECT_ON
 DRIVE_SELECT_OFF
+WRITE_ARM
+WRITE_DISARM
+WRITE_GATE_ON
+WRITE_GATE_OFF
 STATUS
 DISK_STATUS
 MOTOR 0|1
@@ -232,6 +246,12 @@ FLUX_DRAIN_ASCII
 
 `DRIVE_SELECT_ON` 只会选中软驱，不启动马达，也不改变其它控制线。
 
+`WRITE_ARM` 只有在已选驱、马达已启动且磁盘没有写保护时，才会允许后续写操作。
+
+`WRITE_GATE_ON` 必须先执行 `WRITE_ARM`，并会再次检查选驱、马达和写保护状态；打开写门前也会停止磁通采集。
+
+`WRITE_GATE_OFF` 会关闭 `WGATE#` 并让 `WDATA#` 回到空闲；`WRITE_DISARM` 还会清除写入 arm 状态。
+
 `TRACK_INVALIDATE` 会将固件中的软件磁道位置标记为未知。下一次寻道会先自动回零。
 
 `CAPTURE_TS track side` 会寻道到指定磁道、选择 0/1 磁头面，并采集一圈。
@@ -250,9 +270,9 @@ FLUX_DRAIN_ASCII
 
 `FLUX_DRAIN_ASCII` 会消耗最多 8 个磁通样本，以文本形式返回，并同时报告剩余样本数。
 
-`STATUS` 会返回当前固件的软件状态，包括选驱、马达、方向、磁头面、密度、磁道位置、index 周期、RPM、采集状态、磁通样本数和溢出次数。
+`STATUS` 会返回当前固件的软件状态，包括选驱、马达、方向、磁头面、密度、写入 arm/写门、磁道位置、index 周期、RPM、采集状态、磁通样本数和溢出次数。
 
-`DISK_STATUS` 会返回当前软驱输入状态：0 磁道、写保护、换盘、index、读数据，以及选驱、马达、磁头面和密度的软件状态。
+`DISK_STATUS` 会返回当前软驱输入状态：0 磁道、写保护、换盘、index、读数据，以及选驱、马达、磁头面、密度和写入 arm/写门的软件状态。
 
 ## Suggested Bring-Up Flow
 

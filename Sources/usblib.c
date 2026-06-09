@@ -42,12 +42,19 @@ static void FDD_USB_MotorOn(void);
 static void FDD_USB_MotorOff(void);
 static void FDD_USB_DriveSelectOn(void);
 static void FDD_USB_DriveSelectOff(void);
+static void FDD_USB_WriteForceOff(void);
+static void FDD_USB_WriteArm(void);
+static void FDD_USB_WriteDisarm(void);
+static void FDD_USB_WriteGateOn(void);
+static void FDD_USB_WriteGateOff(void);
 static void FDD_USB_CaptureRev(void);
 static void FDD_USB_SendHelp(void);
 static char g_usb_cmd[32];
 static char g_usb_text_resp[220];
 static uint16_t g_usb_flux_samples[31];
 static uint8_t g_usb_flux_resp[2 + 31 * 2];
+static uint8_t g_usb_write_armed = 0;
+static uint8_t g_usb_write_gate_on = 0;
 //<<AICUBE_USER_GLOBAL_DEFINE_END>>
 
 
@@ -194,13 +201,15 @@ static void FDD_USB_SendStatus(void)
     rpm = period_ms ? (uint16_t)(60000UL / period_ms) : 0;
 
     sprintf(g_usb_text_resp,
-            "STAT T=%u SEL=%u MOT=%u DIR=%u SIDE=%u DEN=%u T0=%u WP=%u DC=%u IDX=%u IP=%lu RPM=%u CAP=%u FLUX=%u OVF=%u MS=%lu\r\n",
+            "STAT T=%u SEL=%u MOT=%u DIR=%u SIDE=%u DEN=%u WARM=%u WG=%u T0=%u WP=%u DC=%u IDX=%u IP=%lu RPM=%u CAP=%u FLUX=%u OVF=%u MS=%lu\r\n",
             track,
             FDD_IO_IsSelected(),
             FDD_IO_IsMotorOn(),
             FDD_IO_GetDirection(),
             FDD_IO_GetSide(),
             FDD_IO_GetDensity(),
+            g_usb_write_armed,
+            g_usb_write_gate_on,
             FDD_IO_IsTrack0(),
             FDD_IO_IsWriteProtected(),
             FDD_IO_IsDiskChanged(),
@@ -217,7 +226,7 @@ static void FDD_USB_SendStatus(void)
 static void FDD_USB_SendDiskStatus(void)
 {
     sprintf(g_usb_text_resp,
-            "DISK T0=%u WP=%u DC=%u IDX=%u RDATA=%u SEL=%u MOT=%u SIDE=%u DEN=%u\r\n",
+            "DISK T0=%u WP=%u DC=%u IDX=%u RDATA=%u SEL=%u MOT=%u SIDE=%u DEN=%u WARM=%u WG=%u\r\n",
             FDD_IO_IsTrack0(),
             FDD_IO_IsWriteProtected(),
             FDD_IO_IsDiskChanged(),
@@ -226,7 +235,9 @@ static void FDD_USB_SendDiskStatus(void)
             FDD_IO_IsSelected(),
             FDD_IO_IsMotorOn(),
             FDD_IO_GetSide(),
-            FDD_IO_GetDensity());
+            FDD_IO_GetDensity(),
+            g_usb_write_armed,
+            g_usb_write_gate_on);
     FDD_USB_SendText(g_usb_text_resp);
 }
 
@@ -280,6 +291,7 @@ static void FDD_USB_ReadyDrive(void)
     uint32_t period_ms;
     uint16_t rpm;
 
+    FDD_USB_WriteForceOff();
     FDD_IO_Select(1);
     FDD_IO_Motor(1);
     FDD_Index_Reset();
@@ -308,8 +320,7 @@ static void FDD_USB_MotorOff(void)
 {
     FDD_Flux_Stop();
     FDD_Flux_Reset();
-    FDD_IO_WriteGate(0);
-    FDD_IO_WriteDataIdle();
+    FDD_USB_WriteForceOff();
     FDD_IO_Select(0);
     FDD_IO_Motor(0);
     FDD_USB_SendText("OK MOTOR_OFF\r\n");
@@ -324,15 +335,96 @@ static void FDD_USB_DriveSelectOn(void)
 static void FDD_USB_DriveSelectOff(void)
 {
     FDD_Flux_Stop();
-    FDD_IO_WriteGate(0);
-    FDD_IO_WriteDataIdle();
+    FDD_USB_WriteForceOff();
     FDD_IO_Select(0);
     FDD_USB_SendText("OK DRIVE_SELECT_OFF\r\n");
 }
 
+static void FDD_USB_WriteForceOff(void)
+{
+    FDD_IO_WriteGate(0);
+    FDD_IO_WriteDataIdle();
+    g_usb_write_gate_on = 0;
+    g_usb_write_armed = 0;
+}
+
+static void FDD_USB_WriteArm(void)
+{
+    if (!FDD_IO_IsSelected())
+    {
+        FDD_USB_SendText("ERR WRITE_ARM NO_SELECT\r\n");
+        return;
+    }
+
+    if (!FDD_IO_IsMotorOn())
+    {
+        FDD_USB_SendText("ERR WRITE_ARM NO_MOTOR\r\n");
+        return;
+    }
+
+    if (FDD_IO_IsWriteProtected())
+    {
+        FDD_USB_SendText("ERR WRITE_ARM WRITE_PROTECT\r\n");
+        return;
+    }
+
+    g_usb_write_armed = 1;
+    FDD_USB_SendText("OK WRITE_ARM\r\n");
+}
+
+static void FDD_USB_WriteDisarm(void)
+{
+    FDD_USB_WriteForceOff();
+    FDD_USB_SendText("OK WRITE_DISARM\r\n");
+}
+
+static void FDD_USB_WriteGateOn(void)
+{
+    if (!g_usb_write_armed)
+    {
+        FDD_USB_SendText("ERR WRITE_GATE_ON NOT_ARMED\r\n");
+        return;
+    }
+
+    if (!FDD_IO_IsSelected())
+    {
+        FDD_USB_WriteForceOff();
+        FDD_USB_SendText("ERR WRITE_GATE_ON NO_SELECT\r\n");
+        return;
+    }
+
+    if (!FDD_IO_IsMotorOn())
+    {
+        FDD_USB_WriteForceOff();
+        FDD_USB_SendText("ERR WRITE_GATE_ON NO_MOTOR\r\n");
+        return;
+    }
+
+    if (FDD_IO_IsWriteProtected())
+    {
+        FDD_USB_WriteForceOff();
+        FDD_USB_SendText("ERR WRITE_GATE_ON WRITE_PROTECT\r\n");
+        return;
+    }
+
+    FDD_Flux_Stop();
+    FDD_IO_WriteDataIdle();
+    FDD_IO_WriteGate(1);
+    g_usb_write_gate_on = 1;
+    FDD_USB_SendText("OK WRITE_GATE_ON\r\n");
+}
+
+static void FDD_USB_WriteGateOff(void)
+{
+    FDD_IO_WriteGate(0);
+    FDD_IO_WriteDataIdle();
+    g_usb_write_gate_on = 0;
+    FDD_USB_SendText("OK WRITE_GATE_OFF\r\n");
+}
+
 static void FDD_USB_SendHelp(void)
 {
-    FDD_USB_SendText("CMDS PING HELP SAFE STATUS DISK_STATUS READY MOTOR_ON MOTOR_OFF DRIVE_SELECT_ON DRIVE_SELECT_OFF MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_DRAIN FLUX_PEEK FLUX_READ_ASCII FLUX_PEEK_ASCII FLUX_DRAIN_ASCII\r\n");
+    FDD_USB_SendText("CMDS PING HELP SAFE STATUS DISK_STATUS READY MOTOR_ON MOTOR_OFF DRIVE_SELECT_ON DRIVE_SELECT_OFF WRITE_ARM WRITE_DISARM WRITE_GATE_ON WRITE_GATE_OFF MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_DRAIN FLUX_PEEK FLUX_READ_ASCII FLUX_PEEK_ASCII FLUX_DRAIN_ASCII\r\n");
 }
 
 static void FDD_USB_SendFlux(void)
@@ -447,6 +539,7 @@ static void FDD_USB_SendFluxDrainAscii(void)
 
 static void FDD_USB_CaptureRev(void)
 {
+    FDD_USB_WriteForceOff();
     FDD_Flux_Stop();
     FDD_Flux_Reset();
     FDD_Index_Reset();
@@ -503,6 +596,8 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     else if (FDD_USB_CmdEq(g_usb_cmd, "SAFE"))
     {
         FDD_IO_InitSafe();
+        g_usb_write_gate_on = 0;
+        g_usb_write_armed = 0;
         FDD_USB_SendText("OK SAFE\r\n");
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "READY"))
@@ -525,28 +620,51 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     {
         FDD_USB_DriveSelectOff();
     }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "WRITE_ARM"))
+    {
+        FDD_USB_WriteArm();
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "WRITE_DISARM"))
+    {
+        FDD_USB_WriteDisarm();
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "WRITE_GATE_ON"))
+    {
+        FDD_USB_WriteGateOn();
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "WRITE_GATE_OFF"))
+    {
+        FDD_USB_WriteGateOff();
+    }
     else if (FDD_USB_CmdStarts(g_usb_cmd, "MOTOR "))
     {
         FDD_IO_Motor(g_usb_cmd[6] == '1');
+        if (g_usb_cmd[6] != '1')
+            FDD_USB_WriteForceOff();
         FDD_USB_SendText("OK MOTOR\r\n");
     }
     else if (FDD_USB_CmdStarts(g_usb_cmd, "SELECT "))
     {
         FDD_IO_Select(g_usb_cmd[7] == '1');
+        if (g_usb_cmd[7] != '1')
+            FDD_USB_WriteForceOff();
         FDD_USB_SendText("OK SELECT\r\n");
     }
     else if (FDD_USB_CmdStarts(g_usb_cmd, "DIR "))
     {
+        FDD_USB_WriteForceOff();
         FDD_IO_SetDirection(g_usb_cmd[4] == '1');
         FDD_USB_SendText("OK DIR\r\n");
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "STEP"))
     {
+        FDD_USB_WriteForceOff();
         FDD_IO_StepPulse();
         FDD_USB_SendText("OK STEP\r\n");
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "HOME"))
     {
+        FDD_USB_WriteForceOff();
         if (FDD_IO_Home())
             FDD_USB_SendText("OK HOME\r\n");
         else
@@ -554,6 +672,7 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     }
     else if (FDD_USB_CmdStarts(g_usb_cmd, "SEEK "))
     {
+        FDD_USB_WriteForceOff();
         if (FDD_USB_ParseU8(&g_usb_cmd[5], &value) && FDD_IO_Seek(value))
             FDD_USB_SendText("OK SEEK\r\n");
         else
@@ -566,11 +685,13 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     }
     else if (FDD_USB_CmdStarts(g_usb_cmd, "SIDE "))
     {
+        FDD_USB_WriteForceOff();
         FDD_IO_SetSide(g_usb_cmd[5] == '1');
         FDD_USB_SendText("OK SIDE\r\n");
     }
     else if (FDD_USB_CmdStarts(g_usb_cmd, "DENSEL "))
     {
+        FDD_USB_WriteForceOff();
         FDD_IO_SetDensity(g_usb_cmd[7] == '1');
         FDD_USB_SendText("OK DENSEL\r\n");
     }
@@ -618,6 +739,7 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "FLUX_START"))
     {
+        FDD_USB_WriteForceOff();
         FDD_Flux_Reset();
         FDD_Flux_Start();
         FDD_USB_SendText("OK FLUX_START\r\n");
