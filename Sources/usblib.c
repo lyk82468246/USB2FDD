@@ -26,6 +26,7 @@ static uint8_t FDD_USB_CmdStarts(const char *cmd, const char *word);
 static uint8_t FDD_USB_ParseU8(const char *text, uint8_t *value);
 static uint8_t FDD_USB_ParseTwoU8(const char *text, uint8_t *first, uint8_t *second);
 static void FDD_USB_SendStatus(void);
+static void FDD_USB_SendDiskStatus(void);
 static void FDD_USB_SendFluxInfo(void);
 static void FDD_USB_SendFluxStats(void);
 static void FDD_USB_SendFlux(void);
@@ -213,6 +214,22 @@ static void FDD_USB_SendStatus(void)
     FDD_USB_SendText(g_usb_text_resp);
 }
 
+static void FDD_USB_SendDiskStatus(void)
+{
+    sprintf(g_usb_text_resp,
+            "DISK T0=%u WP=%u DC=%u IDX=%u RDATA=%u SEL=%u MOT=%u SIDE=%u DEN=%u\r\n",
+            FDD_IO_IsTrack0(),
+            FDD_IO_IsWriteProtected(),
+            FDD_IO_IsDiskChanged(),
+            FDD_IO_ReadIndex(),
+            FDD_IO_ReadData(),
+            FDD_IO_IsSelected(),
+            FDD_IO_IsMotorOn(),
+            FDD_IO_GetSide(),
+            FDD_IO_GetDensity());
+    FDD_USB_SendText(g_usb_text_resp);
+}
+
 static void FDD_USB_SendFluxInfo(void)
 {
     sprintf(g_usb_text_resp,
@@ -315,7 +332,7 @@ static void FDD_USB_DriveSelectOff(void)
 
 static void FDD_USB_SendHelp(void)
 {
-    FDD_USB_SendText("CMDS PING HELP SAFE STATUS READY MOTOR_ON MOTOR_OFF DRIVE_SELECT_ON DRIVE_SELECT_OFF MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_DRAIN FLUX_PEEK FLUX_READ_ASCII FLUX_PEEK_ASCII FLUX_DRAIN_ASCII\r\n");
+    FDD_USB_SendText("CMDS PING HELP SAFE STATUS DISK_STATUS READY MOTOR_ON MOTOR_OFF DRIVE_SELECT_ON DRIVE_SELECT_OFF MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_DRAIN FLUX_PEEK FLUX_READ_ASCII FLUX_PEEK_ASCII FLUX_DRAIN_ASCII\r\n");
 }
 
 static void FDD_USB_SendFlux(void)
@@ -560,6 +577,10 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     else if (FDD_USB_CmdEq(g_usb_cmd, "STATUS"))
     {
         FDD_USB_SendStatus();
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "DISK_STATUS"))
+    {
+        FDD_USB_SendDiskStatus();
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "INDEX_RESET"))
     {

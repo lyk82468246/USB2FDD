@@ -94,6 +94,7 @@ MOTOR_OFF
 DRIVE_SELECT_ON
 DRIVE_SELECT_OFF
 STATUS
+DISK_STATUS
 MOTOR 0|1
 SELECT 0|1
 DIR 0|1
@@ -164,6 +165,8 @@ FLUX_DRAIN_ASCII
 
 `STATUS` reports the current software view of selected drive, motor, direction, side, density, track position, index period, RPM, capture state, flux sample count, and overflow count.
 
+`DISK_STATUS` reports the current raw-ish disk input view: track 0, write protect, disk change, index, read data, plus selected drive, motor, side, and density software state.
+
 ## USB CDC 命令
 
 文本命令不区分大小写。
@@ -178,6 +181,7 @@ MOTOR_OFF
 DRIVE_SELECT_ON
 DRIVE_SELECT_OFF
 STATUS
+DISK_STATUS
 MOTOR 0|1
 SELECT 0|1
 DIR 0|1
@@ -247,6 +251,8 @@ FLUX_DRAIN_ASCII
 `FLUX_DRAIN_ASCII` 会消耗最多 8 个磁通样本，以文本形式返回，并同时报告剩余样本数。
 
 `STATUS` 会返回当前固件的软件状态，包括选驱、马达、方向、磁头面、密度、磁道位置、index 周期、RPM、采集状态、磁通样本数和溢出次数。
+
+`DISK_STATUS` 会返回当前软驱输入状态：0 磁道、写保护、换盘、index、读数据，以及选驱、马达、磁头面和密度的软件状态。
 
 ## Suggested Bring-Up Flow
 
