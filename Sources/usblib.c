@@ -38,6 +38,7 @@ static void FDD_USB_SendFluxAsciiSamples(const char *tag, uint16_t count);
 static void FDD_USB_SendRpm(void);
 static void FDD_USB_ReadyDrive(void);
 static void FDD_USB_MotorOff(void);
+static void FDD_USB_DriveSelectOff(void);
 static void FDD_USB_CaptureRev(void);
 static void FDD_USB_SendHelp(void);
 static char g_usb_cmd[32];
@@ -289,9 +290,18 @@ static void FDD_USB_MotorOff(void)
     FDD_USB_SendText("OK MOTOR_OFF\r\n");
 }
 
+static void FDD_USB_DriveSelectOff(void)
+{
+    FDD_Flux_Stop();
+    FDD_IO_WriteGate(0);
+    FDD_IO_WriteDataIdle();
+    FDD_IO_Select(0);
+    FDD_USB_SendText("OK DRIVE_SELECT_OFF\r\n");
+}
+
 static void FDD_USB_SendHelp(void)
 {
-    FDD_USB_SendText("CMDS PING HELP SAFE STATUS READY MOTOR_OFF MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_DRAIN FLUX_PEEK FLUX_READ_ASCII FLUX_PEEK_ASCII FLUX_DRAIN_ASCII\r\n");
+    FDD_USB_SendText("CMDS PING HELP SAFE STATUS READY MOTOR_OFF DRIVE_SELECT_OFF MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_DRAIN FLUX_PEEK FLUX_READ_ASCII FLUX_PEEK_ASCII FLUX_DRAIN_ASCII\r\n");
 }
 
 static void FDD_USB_SendFlux(void)
@@ -471,6 +481,10 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     else if (FDD_USB_CmdEq(g_usb_cmd, "MOTOR_OFF"))
     {
         FDD_USB_MotorOff();
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "DRIVE_SELECT_OFF"))
+    {
+        FDD_USB_DriveSelectOff();
     }
     else if (FDD_USB_CmdStarts(g_usb_cmd, "MOTOR "))
     {
