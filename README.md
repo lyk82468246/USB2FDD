@@ -88,6 +88,11 @@ Text commands are case-insensitive.
 ```text
 PING
 HELP
+VERSION
+LIMITS
+SIGNALS
+WRITE_LIMITS
+CAPTURE_STATUS
 SAFE
 READY
 MOTOR_ON
@@ -144,6 +149,8 @@ FLUX_DRAIN_ASCII
 - Remaining bytes: little-endian `uint16_t` timer intervals
 
 `FLUX_INFO` returns capture state, remaining sample count, overflow count, and the last measured index period.
+
+`VERSION`, `LIMITS`, `SIGNALS`, `WRITE_LIMITS`, and `CAPTURE_STATUS` are read-only discovery commands for host-side scripts. They report firmware identity, configured limits, current signal state, write-test limits, and capture status.
 
 `FLUX_STATS` returns sample count, minimum interval, maximum interval, average interval, and overflow count for the current stopped capture buffer. It does not consume samples.
 
@@ -207,6 +214,11 @@ FLUX_DRAIN_ASCII
 ```text
 PING
 HELP
+VERSION
+LIMITS
+SIGNALS
+WRITE_LIMITS
+CAPTURE_STATUS
 SAFE
 READY
 MOTOR_ON
@@ -263,6 +275,8 @@ FLUX_DRAIN_ASCII
 - 后续数据：little-endian `uint16_t` 定时器间隔样本
 
 `FLUX_INFO` 返回磁通采集状态、剩余样本数、溢出次数和最近一次 `INDEX#` 周期。
+
+`VERSION`、`LIMITS`、`SIGNALS`、`WRITE_LIMITS` 和 `CAPTURE_STATUS` 是只读发现命令，方便上位机脚本读取固件身份、配置限制、当前信号状态、写入测试限制和采集状态。
 
 `FLUX_STATS` 返回当前已停止采集缓冲区的样本数、最小间隔、最大间隔、平均间隔和溢出次数，不会消耗 `FLUX_READ` 数据。
 
