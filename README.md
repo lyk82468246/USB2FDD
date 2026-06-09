@@ -98,6 +98,7 @@ WRITE_DISARM
 WRITE_GATE_ON
 WRITE_GATE_ON_INDEX
 WRITE_GATE_OFF
+WRITE_GATE_OFF_INDEX
 WRITE_DATA 0|1
 WRITE_PULSE us
 WRITE_PULSES count pulse_us gap_us
@@ -162,6 +163,8 @@ FLUX_DRAIN_ASCII
 
 `WRITE_GATE_OFF` disables `WGATE#` and idles `WDATA#`; `WRITE_DISARM` also clears the write arm state.
 
+`WRITE_GATE_OFF_INDEX` waits for the next `INDEX#`, then disables `WGATE#` and idles `WDATA#`. If no index arrives before timeout, it forces the write gate off.
+
 `WRITE_DATA 0|1` changes the logical write data state only while `WGATE#` is enabled. `1` means active write-data pulse state, so the active-low `WDATA#` line is driven low.
 
 `WRITE_PULSE us` emits one active-low `WDATA#` pulse while `WGATE#` is enabled. The current pulse range is 1..100 us and is intended for oscilloscope or logic-analyzer tests.
@@ -210,6 +213,7 @@ WRITE_DISARM
 WRITE_GATE_ON
 WRITE_GATE_ON_INDEX
 WRITE_GATE_OFF
+WRITE_GATE_OFF_INDEX
 WRITE_DATA 0|1
 WRITE_PULSE us
 WRITE_PULSES count pulse_us gap_us
@@ -273,6 +277,8 @@ FLUX_DRAIN_ASCII
 `WRITE_GATE_ON_INDEX` 执行与 `WRITE_GATE_ON` 相同的安全检查，等待 `INDEX#` 后再打开 `WGATE#`。
 
 `WRITE_GATE_OFF` 会关闭 `WGATE#` 并让 `WDATA#` 回到空闲；`WRITE_DISARM` 还会清除写入 arm 状态。
+
+`WRITE_GATE_OFF_INDEX` 会等待下一次 `INDEX#`，然后关闭 `WGATE#` 并让 `WDATA#` 回到空闲；如果等待超时，会强制关闭写门。
 
 `WRITE_DATA 0|1` 只在 `WGATE#` 已打开时改变逻辑写数据状态。`1` 表示写数据有效脉冲态，因此低有效的 `WDATA#` 会被拉低。
 
