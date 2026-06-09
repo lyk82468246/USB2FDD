@@ -89,6 +89,7 @@ PING
 HELP
 SAFE
 READY
+MOTOR_OFF
 STATUS
 MOTOR 0|1
 SELECT 0|1
@@ -132,6 +133,8 @@ FLUX_DRAIN_ASCII
 
 `READY` selects the drive, starts the motor, waits for `INDEX#`, then returns the estimated RPM and index period.
 
+`MOTOR_OFF` stops flux capture, clears the flux buffer, disables write gate, idles write data, deselects the drive, and stops the motor.
+
 `TRACK_INVALIDATE` marks the software track position as unknown. The next seek will home the drive first.
 
 `CAPTURE_TS track side` seeks to a track, selects side 0 or 1, and captures one revolution.
@@ -161,6 +164,7 @@ PING
 HELP
 SAFE
 READY
+MOTOR_OFF
 STATUS
 MOTOR 0|1
 SELECT 0|1
@@ -203,6 +207,8 @@ FLUX_DRAIN_ASCII
 `FLUX_STATS` 返回当前已停止采集缓冲区的样本数、最小间隔、最大间隔、平均间隔和溢出次数，不会消耗 `FLUX_READ` 数据。
 
 `READY` 会选中软驱、启动马达、等待 `INDEX#`，然后返回估算 RPM 和 index 周期。
+
+`MOTOR_OFF` 会停止磁通采集、清空磁通缓冲、关闭写门控、让写数据回到空闲、取消选驱并关闭马达。
 
 `TRACK_INVALIDATE` 会将固件中的软件磁道位置标记为未知。下一次寻道会先自动回零。
 
