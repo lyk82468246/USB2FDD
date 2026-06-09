@@ -106,6 +106,7 @@ WRITE_PULSES count pulse_us gap_us
 WRITE_CLOCK count cell_us
 STATUS
 DISK_STATUS
+WRITE_STATUS
 MOTOR 0|1
 SELECT 0|1
 DIR 0|1
@@ -196,6 +197,8 @@ FLUX_DRAIN_ASCII
 
 `DISK_STATUS` reports the current raw-ish disk input view: track 0, write protect, disk change, index, read data, plus selected drive, motor, side, density, and write arm/gate/data software state.
 
+`WRITE_STATUS` reports a compact write-side view: selected drive, motor, write protect, write arm, write gate, write data, index, and index period.
+
 ## USB CDC 命令
 
 文本命令不区分大小写。
@@ -222,6 +225,7 @@ WRITE_PULSES count pulse_us gap_us
 WRITE_CLOCK count cell_us
 STATUS
 DISK_STATUS
+WRITE_STATUS
 MOTOR 0|1
 SELECT 0|1
 DIR 0|1
@@ -311,6 +315,8 @@ FLUX_DRAIN_ASCII
 `STATUS` 会返回当前固件的软件状态，包括选驱、马达、方向、磁头面、密度、写入 arm/写门/写数据、磁道位置、index 周期、RPM、采集状态、磁通样本数和溢出次数。
 
 `DISK_STATUS` 会返回当前软驱输入状态：0 磁道、写保护、换盘、index、读数据，以及选驱、马达、磁头面、密度和写入 arm/写门/写数据的软件状态。
+
+`WRITE_STATUS` 会返回紧凑的写入侧状态：选驱、马达、写保护、写入 arm、写门、写数据、index 和 index 周期。
 
 ## Suggested Bring-Up Flow
 

@@ -28,6 +28,7 @@ static uint8_t FDD_USB_ParseTwoU8(const char *text, uint8_t *first, uint8_t *sec
 static uint8_t FDD_USB_ParseThreeU8(const char *text, uint8_t *first, uint8_t *second, uint8_t *third);
 static void FDD_USB_SendStatus(void);
 static void FDD_USB_SendDiskStatus(void);
+static void FDD_USB_SendWriteStatus(void);
 static void FDD_USB_SendFluxInfo(void);
 static void FDD_USB_SendFluxStats(void);
 static void FDD_USB_SendFlux(void);
@@ -284,6 +285,25 @@ static void FDD_USB_SendDiskStatus(void)
             g_usb_write_armed,
             g_usb_write_gate_on,
             g_usb_write_data_active);
+    FDD_USB_SendText(g_usb_text_resp);
+}
+
+static void FDD_USB_SendWriteStatus(void)
+{
+    sprintf(g_usb_text_resp,
+            "WRITE SEL=%u MOT=%u WP=%u WARM=%u",
+            FDD_IO_IsSelected(),
+            FDD_IO_IsMotorOn(),
+            FDD_IO_IsWriteProtected(),
+            g_usb_write_armed);
+    FDD_USB_SendText(g_usb_text_resp);
+
+    sprintf(g_usb_text_resp,
+            " WG=%u WD=%u IDX=%u IP=%lu\r\n",
+            g_usb_write_gate_on,
+            g_usb_write_data_active,
+            FDD_IO_ReadIndex(),
+            FDD_Index_GetPeriodMs());
     FDD_USB_SendText(g_usb_text_resp);
 }
 
@@ -640,7 +660,7 @@ static void FDD_USB_WriteClock(uint8_t count, uint8_t cell_us)
 
 static void FDD_USB_SendHelp(void)
 {
-    FDD_USB_SendText("CMDS PING HELP SAFE STATUS DISK_STATUS READY MOTOR_ON MOTOR_OFF\r\n");
+    FDD_USB_SendText("CMDS PING HELP SAFE STATUS DISK_STATUS WRITE_STATUS READY MOTOR_ON MOTOR_OFF\r\n");
     FDD_USB_SendText("CMDS DRIVE_SELECT_ON DRIVE_SELECT_OFF MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL\r\n");
     FDD_USB_SendText("CMDS INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS\r\n");
     FDD_USB_SendText("CMDS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_DRAIN FLUX_PEEK\r\n");
@@ -958,6 +978,10 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     else if (FDD_USB_CmdEq(g_usb_cmd, "DISK_STATUS"))
     {
         FDD_USB_SendDiskStatus();
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "WRITE_STATUS"))
+    {
+        FDD_USB_SendWriteStatus();
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "INDEX_RESET"))
     {
