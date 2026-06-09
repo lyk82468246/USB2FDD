@@ -130,6 +130,9 @@ FLUX_INFO
 FLUX_STATS
 FLUX_START
 FLUX_STOP
+PREPARE_TRACK track side
+CAPTURE_PREPARED
+READ_TRACK_ASCII track side
 CAPTURE_REV
 CAPTURE_NEXT
 CAPTURE_TRACK n
@@ -196,6 +199,12 @@ FLUX_DRAIN_ASCII_N n
 `TRACK_INVALIDATE` marks the software track position as unknown. The next seek will home the drive first.
 
 `CAPTURE_TS track side` seeks to a track, selects side 0 or 1, and captures one revolution.
+
+`PREPARE_TRACK track side` selects the drive, starts the motor, selects side 0 or 1, seeks to the requested track, and keeps write gate safely off.
+
+`CAPTURE_PREPARED` captures one revolution on the currently prepared track and side.
+
+`READ_TRACK_ASCII track side` prepares the track/side, captures one revolution, and returns up to 16 flux samples as text for quick manual inspection.
 
 `CAPTURE_NEXT` captures another revolution on the current track and side.
 
@@ -269,6 +278,9 @@ FLUX_INFO
 FLUX_STATS
 FLUX_START
 FLUX_STOP
+PREPARE_TRACK track side
+CAPTURE_PREPARED
+READ_TRACK_ASCII track side
 CAPTURE_REV
 CAPTURE_NEXT
 CAPTURE_TRACK n
@@ -336,6 +348,12 @@ FLUX_DRAIN_ASCII_N n
 
 `CAPTURE_TS track side` 会寻道到指定磁道、选择 0/1 磁头面，并采集一圈。
 
+`PREPARE_TRACK track side` 会选中软驱、启动马达、选择 0/1 磁头面、寻道到指定磁道，并保持写门安全关闭。
+
+`CAPTURE_PREPARED` 会在当前已准备好的磁道和磁头面上采集一圈。
+
+`READ_TRACK_ASCII track side` 会准备指定磁道/磁头面、采集一圈，并以文本形式返回最多 16 个磁通样本，方便手工快速查看。
+
 `CAPTURE_NEXT` 会在当前磁道和当前磁头面上重新采集一圈。
 
 `FLUX_CLEAR` 用于清空当前磁通缓冲，功能等价于 `FLUX_RESET`，但更适合上位机脚本表达语义。
@@ -363,11 +381,9 @@ FLUX_DRAIN_ASCII_N n
 ```text
 SAFE
 READY
-HOME
-SEEK 10
-CAPTURE_REV
+READ_TRACK_ASCII 10 0
 STATUS
-FLUX_READ
+FLUX_READ_N 16
 ```
 
 For a 300 RPM drive, `RPM` should be close to `300`, and the index period should be close to `200 ms`.
@@ -377,10 +393,9 @@ For a 300 RPM drive, `RPM` should be close to `300`, and the index period should
 ```text
 SAFE
 READY
-HOME
-CAPTURE_TRACK 0
+READ_TRACK_ASCII 0 0
 STATUS
-FLUX_READ
+FLUX_READ_N 16
 ```
 
 300 RPM 软驱的 `RPM` 应接近 `300`，`INDEX#` 周期应接近 `200 ms`。如果 `STATUS` 中的 `OVF` 不为 0，说明一圈磁通样本超过了当前缓冲容量，需要继续优化采集/上传策略。

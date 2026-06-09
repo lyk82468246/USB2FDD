@@ -67,6 +67,10 @@ static void FDD_USB_WriteData(uint8_t active);
 static void FDD_USB_WritePulse(uint8_t pulse_us);
 static void FDD_USB_WritePulses(uint8_t count, uint8_t pulse_us, uint8_t gap_us);
 static void FDD_USB_WriteClock(uint8_t count, uint8_t cell_us);
+static uint8_t FDD_USB_PrepareTrack(uint8_t track, uint8_t side);
+static void FDD_USB_PrepareTrackCommand(uint8_t track, uint8_t side);
+static void FDD_USB_ReadTrackAscii(uint8_t track, uint8_t side);
+static uint8_t FDD_USB_CaptureRevCore(void);
 static void FDD_USB_CaptureRev(void);
 static void FDD_USB_SendHelp(void);
 static char g_usb_cmd[32];
@@ -762,13 +766,87 @@ static void FDD_USB_WriteClock(uint8_t count, uint8_t cell_us)
     FDD_USB_SendText("OK WRITE_CLOCK\r\n");
 }
 
+static uint8_t FDD_USB_PrepareTrack(uint8_t track, uint8_t side)
+{
+    if (side > 1)
+        return 0;
+
+    FDD_USB_WriteForceOff();
+    FDD_IO_Select(1);
+    FDD_IO_Motor(1);
+    FDD_IO_SetSide(side);
+
+    if (!FDD_IO_Seek(track))
+        return 0;
+
+    return 1;
+}
+
+static void FDD_USB_PrepareTrackCommand(uint8_t track, uint8_t side)
+{
+    if (!FDD_USB_PrepareTrack(track, side))
+    {
+        FDD_USB_SendText("ERR PREPARE_TRACK\r\n");
+        return;
+    }
+
+    sprintf(g_usb_text_resp, "OK PREPARE_TRACK T=%u SIDE=%u\r\n", track, side);
+    FDD_USB_SendText(g_usb_text_resp);
+}
+
+static void FDD_USB_ReadTrackAscii(uint8_t track, uint8_t side)
+{
+    if (!FDD_USB_PrepareTrack(track, side))
+    {
+        FDD_USB_SendText("ERR READ_TRACK_ASCII PREPARE\r\n");
+        return;
+    }
+
+    if (!FDD_USB_CaptureRevCore())
+        return;
+
+    FDD_USB_SendFluxPeekAsciiCount(16);
+}
+
+static uint8_t FDD_USB_CaptureRevCore(void)
+{
+    FDD_USB_WriteForceOff();
+    FDD_Flux_Stop();
+    FDD_Flux_Reset();
+    FDD_Index_Reset();
+
+    if (!FDD_Index_Wait(FDD_INDEX_TIMEOUT_MS))
+    {
+        FDD_USB_SendText("ERR CAPTURE NO_INDEX\r\n");
+        return 0;
+    }
+
+    FDD_Flux_Start();
+    if (!FDD_Index_Wait(FDD_CAPTURE_TIMEOUT_MS))
+    {
+        FDD_Flux_Stop();
+        FDD_USB_SendText("ERR CAPTURE TIMEOUT\r\n");
+        return 0;
+    }
+    FDD_Flux_Stop();
+
+    sprintf(g_usb_text_resp,
+            "OK CAPTURE FLUX=%u OVF=%u IP=%lu\r\n",
+            FDD_Flux_Available(),
+            FDD_Flux_GetOverflowCount(),
+            FDD_Index_GetPeriodMs());
+    FDD_USB_SendText(g_usb_text_resp);
+    return 1;
+}
+
 static void FDD_USB_SendHelp(void)
 {
     FDD_USB_SendText("CMDS PING HELP VERSION LIMITS SIGNALS STATUS DISK_STATUS WRITE_STATUS WRITE_LIMITS CAPTURE_STATUS\r\n");
     FDD_USB_SendText("CMDS SAFE READY MOTOR_ON MOTOR_OFF\r\n");
     FDD_USB_SendText("CMDS DRIVE_SELECT_ON DRIVE_SELECT_OFF MOTOR SELECT DIR STEP HOME SEEK TRACK_INVALIDATE SIDE DENSEL\r\n");
     FDD_USB_SendText("CMDS INDEX_RESET INDEX_WAIT RPM FLUX_RESET FLUX_CLEAR FLUX_START FLUX_STOP FLUX_INFO FLUX_STATS\r\n");
-    FDD_USB_SendText("CMDS CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS FLUX_READ FLUX_READ_N FLUX_DRAIN FLUX_DRAIN_N\r\n");
+    FDD_USB_SendText("CMDS PREPARE_TRACK CAPTURE_PREPARED READ_TRACK_ASCII CAPTURE_REV CAPTURE_NEXT CAPTURE_TRACK CAPTURE_TS\r\n");
+    FDD_USB_SendText("CMDS FLUX_READ FLUX_READ_N FLUX_DRAIN FLUX_DRAIN_N\r\n");
     FDD_USB_SendText("CMDS FLUX_PEEK FLUX_PEEK_N FLUX_SKIP\r\n");
     FDD_USB_SendText("CMDS FLUX_READ_ASCII FLUX_READ_ASCII_N FLUX_PEEK_ASCII FLUX_PEEK_ASCII_N\r\n");
     FDD_USB_SendText("CMDS FLUX_DRAIN_ASCII FLUX_DRAIN_ASCII_N\r\n");
@@ -961,32 +1039,7 @@ static void FDD_USB_SendFluxDrainAsciiCount(uint8_t requested)
 
 static void FDD_USB_CaptureRev(void)
 {
-    FDD_USB_WriteForceOff();
-    FDD_Flux_Stop();
-    FDD_Flux_Reset();
-    FDD_Index_Reset();
-
-    if (!FDD_Index_Wait(FDD_INDEX_TIMEOUT_MS))
-    {
-        FDD_USB_SendText("ERR CAPTURE NO_INDEX\r\n");
-        return;
-    }
-
-    FDD_Flux_Start();
-    if (!FDD_Index_Wait(FDD_CAPTURE_TIMEOUT_MS))
-    {
-        FDD_Flux_Stop();
-        FDD_USB_SendText("ERR CAPTURE TIMEOUT\r\n");
-        return;
-    }
-    FDD_Flux_Stop();
-
-    sprintf(g_usb_text_resp,
-            "OK CAPTURE FLUX=%u OVF=%u IP=%lu\r\n",
-            FDD_Flux_Available(),
-            FDD_Flux_GetOverflowCount(),
-            FDD_Index_GetPeriodMs());
-    FDD_USB_SendText(g_usb_text_resp);
+    FDD_USB_CaptureRevCore();
 }
 
 void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
@@ -1228,6 +1281,24 @@ void FDD_USB_ProcessPacket(uint8_t *buf, uint16_t len)
     {
         FDD_Flux_Stop();
         FDD_USB_SendText("OK FLUX_STOP\r\n");
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "PREPARE_TRACK "))
+    {
+        if (FDD_USB_ParseTwoU8(&g_usb_cmd[14], &value, &value2))
+            FDD_USB_PrepareTrackCommand(value, value2);
+        else
+            FDD_USB_SendText("ERR PREPARE_TRACK ARG\r\n");
+    }
+    else if (FDD_USB_CmdEq(g_usb_cmd, "CAPTURE_PREPARED"))
+    {
+        FDD_USB_CaptureRev();
+    }
+    else if (FDD_USB_CmdStarts(g_usb_cmd, "READ_TRACK_ASCII "))
+    {
+        if (FDD_USB_ParseTwoU8(&g_usb_cmd[17], &value, &value2))
+            FDD_USB_ReadTrackAscii(value, value2);
+        else
+            FDD_USB_SendText("ERR READ_TRACK_ASCII ARG\r\n");
     }
     else if (FDD_USB_CmdEq(g_usb_cmd, "CAPTURE_REV"))
     {
